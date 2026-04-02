@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Learning assessment — Ghana study coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Figtree:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --card: #fffcf7;
+      --ink: #152119;
+      --muted: #5c6b62;
+      --forest: #1b3d30;
+      --gold: #9a7b1a;
+      --border: #dcd3c2;
+      --bad: #a61f3b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: "Figtree", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    .shell {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 1.75rem 1rem 3rem;
+    }
+    h1 {
+      font-family: "Syne", sans-serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 0 0 0.35rem;
+      color: var(--forest);
+    }
+    .sub { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.95rem; }
+    .progress {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .progress i {
+      display: block;
+      height: 100%;
+      background: var(--forest);
+      width: 20%;
+      transition: width 0.25s ease;
+    }
+    .step {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.35rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 36px rgba(21, 33, 25, 0.06);
+    }
+    .step.active { display: block; }
+    .step h2 {
+      font-family: "Syne", sans-serif;
+      font-size: 1rem;
+      margin: 0 0 0.85rem;
+      color: var(--forest);
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    select, textarea, input[type="text"] {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font: inherit;
+      margin-bottom: 1rem;
+      background: #fff;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    fieldset {
+      border: none;
+      margin: 0 0 1rem;
+      padding: 0;
+    }
+    fieldset label.opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+    }
+    fieldset input { margin-top: 0.25rem; }
+    .nav-btns {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+    }
+    button {
+      font-family: "Syne", sans-serif;
+      font-weight: 700;
+      padding: 0.65rem 1.15rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-back {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-next {
+      background: var(--forest);
+      color: #e8f2ec;
+    }
+    .btn-next:disabled { opacity: 0.45; cursor: not-allowed; }
+    .err {
+      color: var(--bad);
+      font-size: 0.82rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.75rem;
+      display: none;
+    }
+    .err.show { display: block; }
+    .top-links { margin-bottom: 1rem; }
+    .top-links a {
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="top-links"><a href="/">← Home</a></div>
+    <h1>Learning assessment</h1>
+    <p class="sub">Five quick steps. We use this once to personalize your coach — not for grading.</p>
+    <div class="progress"><i id="bar"></i></div>
+
+    <form id="form">
+      <div class="step active" data-step="0">
+        <h2>Where are you in school?</h2>
+        <span class="err" id="e0">Choose one option.</span>
+        <fieldset id="levelGroup">
+          <label class="opt"><input type="radio" name="education_level" value="primary_jhs" /> Primary / JHS (including BECE years)</label>
+          <label class="opt"><input type="radio" name="education_level" value="shs" /> Senior High School (SHS)</label>
+          <label class="opt"><input type="radio" name="education_level" value="tertiary" /> University or technical university</label>
+          <label class="opt"><input type="radio" name="education_level" value="educator_parent" /> Teacher, parent, or tutor helping a learner</label>
+          <label class="opt"><input type="radio" name="education_level" value="other" /> Other / not listed</label>
+        </fieldset>
+      </div>
+
+      <div class="step" data-step="1">
+        <h2>Programme (if it applies)</h2>
+        <label for="shs_track">SHS track or closest match</label>
+        <select id="shs_track" name="shs_track">
+          <option value="na">Not in SHS / not applicable</option>
+          <option value="science">General Science</option>
+          <option value="general_arts">General Arts</option>
+          <option value="business">Business</option>
+          <option value="home_economics">Home Economics</option>
+          <option value="visual_arts">Visual Arts</option>
+          <option value="agricultural">Agricultural Science</option>
+          <option value="technical">Technical</option>
+        </select>
+        <p class="sub" style="margin:0 0 1rem">If you chose JHS or tertiary, pick “Not applicable”.</p>
+      </div>
+
+      <div class="step" data-step="2">
+        <h2>What do you want to work on most?</h2>
+        <label for="subject_focus">Subject or theme</label>
+        <select id="subject_focus" name="subject_focus">
+          <option value="">Select…</option>
+          <option value="English & reading">English &amp; reading</option>
+          <option value="Mathematics">Mathematics</option>
+          <option value="Integrated Science">Integrated Science</option>
+          <option value="Social Studies">Social Studies</option>
+          <option value="ICT & computing">ICT &amp; computing</option>
+          <option value="Digital literacy & online safety">Digital literacy &amp; online safety</option>
+          <option value="WASSCE / exam skills">WASSCE / exam skills</option>
+          <option value="University & career planning">University &amp; career planning</option>
+          <option value="Ghanaian language support">Ghanaian language support</option>
+          <option value="Other / mixed">Other / mixed</option>
+        </select>
+        <span class="err" id="e2">Pick a focus (or Other).</span>
+      </div>
+
+      <div class="step" data-step="3">
+        <h2>Region (optional)</h2>
+        <label for="region">Helps with localized examples</label>
+        <select id="region" name="region">
+          <option value="">Prefer not to say</option>
+          <option value="Greater Accra">Greater Accra</option>
+          <option value="Ashanti">Ashanti</option>
+          <option value="Western">Western</option>
+          <option value="Western North">Western North</option>
+          <option value="Central">Central</option>
+          <option value="Eastern">Eastern</option>
+          <option value="Volta">Volta</option>
+          <option value="Oti">Oti</option>
+          <option value="Northern">Northern</option>
+          <option value="Savannah">Savannah</option>
+          <option value="North East">North East</option>
+          <option value="Upper East">Upper East</option>
+          <option value="Upper West">Upper West</option>
+          <option value="Bono">Bono</option>
+          <option value="Bono East">Bono East</option>
+          <option value="Ahafo">Ahafo</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="4">
+        <h2>Goals in your own words</h2>
+        <label for="goals">What should the coach prioritise? (optional)</label>
+        <textarea id="goals" name="goals" placeholder="e.g. Pass Core Math, understand MoMo scams, revision plan for WASSCE…"></textarea>
+      </div>
+
+      <div class="nav-btns">
+        <button type="button" class="btn-back" id="prev" style="visibility:hidden">Back</button>
+        <button type="button" class="btn-next" id="next">Next</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var steps = [].slice.call(document.querySelectorAll(".step"));
+      var i = 0;
+      var bar = document.getElementById("bar");
+      var nextBtn = document.getElementById("next");
+      var prevBtn = document.getElementById("prev");
+
+      function show() {
+        steps.forEach(function (s, j) {
+          s.classList.toggle("active", j === i);
+        });
+        bar.style.width = ((i + 1) / steps.length * 100) + "%";
+        prevBtn.style.visibility = i === 0 ? "hidden" : "visible";
+        nextBtn.textContent = i === steps.length - 1 ? "Open my chat" : "Next";
+        [].forEach.call(document.querySelectorAll(".err"), function (e) {
+          e.classList.remove("show");
+        });
+      }
+
+      function validate() {
+        if (i === 0) {
+          var ok = document.querySelector("#levelGroup input:checked");
+          document.getElementById("e0").classList.toggle("show", !ok);
+          return !!ok;
+        }
+        if (i === 2) {
+          var sel = document.getElementById("subject_focus").value;
+          document.getElementById("e2").classList.toggle("show", !sel);
+          return !!sel;
+        }
+        return true;
+      }
+
+      function finish() {
+        var level = (document.querySelector("#levelGroup input:checked") || {}).value;
+        if (!level) {
+          i = 0;
+          show();
+          validate();
+          return;
+        }
+        var profile = {
+          education_level: level,
+          shs_track: document.getElementById("shs_track").value || null,
+          subject_focus: document.getElementById("subject_focus").value || null,
+          region: document.getElementById("region").value || null,
+          goals: document.getElementById("goals").value.trim() || null,
+        };
+        if (level !== "shs") {
+          profile.shs_track = "na";
+        }
+        try {
+          var uuid = crypto.randomUUID();
+          localStorage.setItem("ghana_study_thread_id", uuid);
+          localStorage.setItem("ghana_learner_profile", JSON.stringify(profile));
+          sessionStorage.setItem("ghana_show_assessment_welcome", "1");
+        } catch (e) {
+          alert("Could not save in this browser.");
+          return;
+        }
+        window.location.href = "/chat";
+      }
+
+      nextBtn.addEventListener("click", function () {
+        if (!validate()) return;
+        if (i >= steps.length - 1) {
+          finish();
+          return;
+        }
+        i++;
+        show();
+      });
+
+      prevBtn.addEventListener("click", function () {
+        if (i > 0) {
+          i--;
+          show();
+        }
+      });
+
+      show();
+    })();
+  </script>
+</body>
+</html>

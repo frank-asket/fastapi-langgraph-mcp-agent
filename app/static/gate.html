@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Access — Ghana study coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Figtree:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+      font-family: Figtree, system-ui, sans-serif; background: #0f1411; color: #c4cfc7; padding: 1rem; }
+    .card { background: #171e19; border: 1px solid #2a352e; border-radius: 16px; padding: 1.75rem; max-width: 400px; width: 100%; }
+    h1 { font-family: Syne, sans-serif; font-size: 1.35rem; color: #fff; margin: 0 0 0.5rem; }
+    p { margin: 0 0 1.25rem; font-size: 0.9rem; color: #8c9a90; }
+    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 0.35rem; }
+    input[type="password"], input[type="text"] {
+      width: 100%; padding: 0.65rem; border-radius: 10px; border: 1px solid #3d4a42;
+      background: #0f1411; color: #fff; font: inherit; box-sizing: border-box;
+    }
+    button { margin-top: 1rem; width: 100%; padding: 0.75rem; border: none; border-radius: 12px;
+      background: #3d7a5f; color: #f4faf7; font-family: Syne, sans-serif; font-weight: 700; cursor: pointer; }
+    button:hover { filter: brightness(1.08); }
+    .err { color: #e8a0a8; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+    a { color: #d4a84b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>School access</h1>
+    <p>Enter the access code from your teacher or administrator. A session cookie is stored in this browser.</p>
+    <form method="post" action="/gate/session">
+      <input type="hidden" name="next" id="next" value="/chat" />
+      <label for="access_code">Access code</label>
+      <input type="password" name="access_code" id="access_code" autocomplete="current-password" required />
+      <button type="submit">Continue</button>
+      <p class="err" id="e">Invalid code.</p>
+    </form>
+    <p style="margin-top:1rem;margin-bottom:0;font-size:0.8rem"><a href="/">← Home</a></p>
+  </div>
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var n = q.get("next");
+      if (n && n.startsWith("/")) document.getElementById("next").value = n;
+      if (q.get("e") === "1") document.getElementById("e").style.display = "block";
+    })();
+  </script>
+</body>
+</html>

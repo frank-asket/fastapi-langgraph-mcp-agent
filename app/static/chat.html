@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ghana study coach — chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --surface: #fffcf7;
+      --ink: #141c16;
+      --muted: #4a5a50;
+      --forest: #123524;
+      --gold: #b8941f;
+      --gold-dim: rgba(184, 148, 31, 0.35);
+      --user-bg: #1e4a38;
+      --user-fg: #f2f7f4;
+      --border: #d8d2c4;
+      --danger: #8b2942;
+      --radius: 12px;
+      --shadow: 0 12px 40px rgba(20, 28, 22, 0.08);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --dur: 0.45s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.05ms !important;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 1.05rem;
+      line-height: 1.55;
+      color: var(--ink);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 100% -20%, rgba(184, 148, 31, 0.14), transparent 55%),
+        radial-gradient(ellipse 80% 50% at -10% 110%, rgba(18, 53, 36, 0.1), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(184, 148, 31, 0.04), transparent);
+    }
+
+    .shell {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 2rem;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      animation: shellIn 0.65s var(--ease-out) backwards;
+    }
+
+    @keyframes shellIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .icon {
+      width: 1.08em;
+      height: 1.08em;
+      flex-shrink: 0;
+      display: inline-block;
+      vertical-align: -0.15em;
+    }
+
+    .icon-sprite {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    header {
+      font-family: "Outfit", system-ui, sans-serif;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--gold-dim);
+      margin-bottom: 1rem;
+      animation: headerIn 0.55s var(--ease-out) 0.08s backwards;
+    }
+
+    @keyframes headerIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 0.35rem;
+    }
+
+    .title-row .icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 10px;
+      background: linear-gradient(145deg, rgba(30, 74, 56, 0.12), rgba(184, 148, 31, 0.18));
+      color: var(--forest);
+      animation: iconPop 0.6s var(--ease-out) 0.15s backwards;
+    }
+
+    @keyframes iconPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      70% { transform: scale(1.06); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .title-row .icon-wrap .icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--forest);
+    }
+
+    header p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-family: "Outfit", system-ui, sans-serif;
+      font-weight: 400;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+
+    .toolbar button, .toolbar a {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--forest);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      transition: transform 0.2s var(--ease-out), border-color 0.2s, color 0.2s, box-shadow 0.25s;
+    }
+
+    .toolbar button:hover, .toolbar a:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(18, 53, 36, 0.12);
+    }
+
+    .toolbar button:active, .toolbar a:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .toolbar .tb-appear {
+      animation: tbFade 0.4s var(--ease-out) backwards;
+    }
+
+    .toolbar .tb-appear:nth-child(1) { animation-delay: 0.1s; }
+    .toolbar .tb-appear:nth-child(2) { animation-delay: 0.14s; }
+    .toolbar .tb-appear:nth-child(3) { animation-delay: 0.18s; }
+    .toolbar .tb-appear:nth-child(4) { animation-delay: 0.22s; }
+    .toolbar .tb-appear:nth-child(5) { animation-delay: 0.26s; }
+    .toolbar .tb-appear:nth-child(6) { animation-delay: 0.3s; }
+    .toolbar .tb-appear:nth-child(7) { animation-delay: 0.34s; }
+    .toolbar .tb-appear:nth-child(8) { animation-delay: 0.38s; }
+
+    @keyframes tbFade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .toolbar .thread {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: ui-monospace, monospace;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      padding: 0.25rem 0 1rem;
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      max-width: 92%;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      animation: msgIn var(--dur) var(--ease-out) backwards;
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      color: var(--user-fg);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.assistant {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg .role {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+      opacity: 0.75;
+      display: flex;
+      align-items: center;
+      gap: 0.42rem;
+    }
+
+    .msg .role .role-ic {
+      width: 1rem;
+      height: 1rem;
+      opacity: 0.95;
+    }
+
+    .msg.assistant .role { color: var(--gold); }
+    .msg.user .role { color: rgba(242, 247, 244, 0.85); }
+
+    .msg .body { white-space: pre-wrap; word-break: break-word; }
+
+    .msg.error {
+      border-color: rgba(139, 41, 66, 0.45);
+      background: #fff5f7;
+    }
+
+    .composer {
+      position: sticky;
+      bottom: 0;
+      padding-top: 0.75rem;
+      background: linear-gradient(180deg, transparent, var(--bg) 20%);
+    }
+
+    .composer-inner {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: 0.65rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      transition: border-color 0.25s var(--ease-out), box-shadow 0.3s var(--ease-out);
+    }
+
+    .composer-inner:focus-within {
+      border-color: rgba(184, 148, 31, 0.65);
+      box-shadow: 0 0 0 3px rgba(184, 148, 31, 0.18), var(--shadow);
+    }
+
+    .composer-side {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    .attach-btn {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.72rem;
+      padding: 0.45rem 0.55rem;
+      border-radius: 6px;
+      border: 1px solid var(--gold-dim);
+      background: rgba(255, 255, 255, 0.75);
+      color: var(--forest);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: background 0.2s, transform 0.2s var(--ease-out), border-color 0.2s;
+    }
+
+    .attach-btn:hover {
+      background: rgba(255, 248, 230, 0.95);
+      transform: translateY(-1px);
+    }
+
+    .attach-btn:active {
+      transform: scale(0.97);
+    }
+
+    .file-chip {
+      font-size: 0.68rem;
+      color: var(--muted);
+      max-width: 7rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    textarea {
+      flex: 1;
+      border: none;
+      resize: none;
+      min-height: 3.2rem;
+      max-height: 10rem;
+      font: inherit;
+      padding: 0.35rem 0.5rem;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    textarea:focus { outline: none; }
+
+    #send {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-weight: 700;
+      padding: 0.55rem 1.1rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(145deg, var(--forest), #0f2a1f);
+      color: #f4ebc8;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: transform 0.2s var(--ease-out), filter 0.2s, box-shadow 0.25s;
+      box-shadow: 0 4px 14px rgba(18, 53, 36, 0.35);
+    }
+
+    #send .send-ic {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    #send:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    #send:not(:disabled):hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(18, 53, 36, 0.4);
+    }
+
+    #send:not(:disabled):active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .hint {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.45rem;
+      text-align: center;
+    }
+
+    .typing {
+      font-family: "Outfit", sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      padding: 0.45rem 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      border-radius: 999px;
+      border: 1px solid var(--gold-dim);
+      align-self: flex-start;
+      animation: typingEnt 0.35s var(--ease-out);
+      box-shadow: var(--shadow);
+    }
+
+    @keyframes typingEnt {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: dotPulse 1.25s ease-in-out infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dotPulse {
+      0%, 80%, 100% { transform: scale(0.65); opacity: 0.45; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    .resume-bar {
+      font-family: "Outfit", system-ui, sans-serif;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      margin-top: 0.65rem;
+      padding: 0.55rem 0.65rem;
+      background: var(--surface);
+      border: 1px dashed var(--gold-dim);
+      border-radius: 10px;
+      font-size: 0.78rem;
+    }
+
+    .resume-bar label { color: var(--muted); margin-right: 0.25rem; }
+
+    .resume-bar input[type="text"] {
+      flex: 1 1 140px;
+      min-width: 120px;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: 0.78rem ui-monospace, monospace;
+    }
+
+    .resume-bar button.small {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    .resume-bar button.small:hover {
+      border-color: var(--gold);
+      color: var(--forest);
+    }
+
+    .note-persist {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      line-height: 1.4;
+    }
+
+    .profile-banner {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.82rem;
+      background: linear-gradient(120deg, rgba(30, 74, 56, 0.09), rgba(184, 148, 31, 0.14));
+      border: 1px solid var(--gold-dim);
+      border-radius: 12px;
+      padding: 0.7rem 0.9rem;
+      margin-top: 0.75rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .profile-banner strong {
+      display: block;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--gold);
+      margin-bottom: 0.3rem;
+    }
+
+    .welcome-assessment {
+      font-size: 0.78rem;
+      color: var(--forest);
+      margin-top: 0.4rem;
+      padding-top: 0.4rem;
+      border-top: 1px dashed var(--gold-dim);
+    }
+
+    .hints-label {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0.5rem 0 0.25rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .hints-label input { accent-color: var(--forest); }
+
+    .lane-row {
+      font-family: "Outfit", system-ui, sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.5rem 0 0;
+      flex-wrap: wrap;
+    }
+
+    .lane-row label { margin: 0; cursor: pointer; user-select: none; }
+    .lane-row select {
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--gold-dim);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--forest);
+      max-width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .lane-row select:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(184, 148, 31, 0.25);
+    }
+
+    .hints-label svg.icon {
+      color: var(--gold);
+    }
+  </style>
+</head>
+<body>
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></symbol>
+      <symbol id="i-plus-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></symbol>
+      <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+      <symbol id="i-graduation" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+      <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></symbol>
+      <symbol id="i-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2H10a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/></symbol>
+    </defs>
+  </svg>
+  <div class="shell">
+    <header>
+      <div class="title-row">
+        <span class="icon-wrap" aria-hidden="true"><svg class="icon"><use href="#i-graduation"/></svg></span>
+        <h1>Ghana study coach</h1>
+      </div>
+      <p>GES · SHS · WASSCE · Universities — study help &amp; digital literacy. Your <strong>learning ID</strong> keeps one conversation on this server (saved in the browser and in the server database).</p>
+      <div class="toolbar">
+        <a class="tb-appear" href="/"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg> Home</a>
+        <a class="tb-appear" href="/gate"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Access</a>
+        <a class="tb-appear" href="/assessment"><svg class="icon" aria-hidden="true"><use href="#i-clipboard"/></svg> Assessment</a>
+        <button type="button" class="tb-appear" id="newChat"><svg class="icon" aria-hidden="true"><use href="#i-plus-square"/></svg> New conversation</button>
+        <button type="button" class="tb-appear" id="clearProfile" title="Stop sending assessment details to new threads"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg> Clear personalisation</button>
+        <button type="button" class="tb-appear" id="copyId" title="Copy full learning ID"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg> Copy learning ID</button>
+        <a class="tb-appear" href="/docs" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg> API docs</a>
+        <a class="tb-appear" href="/service"><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg> Service map</a>
+        <span class="thread" id="threadLabel" title="Learning ID (thread_id)">Learning ID: —</span>
+      </div>
+      <div id="profileBanner" class="profile-banner" hidden></div>
+      <div class="resume-bar">
+        <label for="resumeInput">Continue on this or another device:</label>
+        <input type="text" id="resumeInput" placeholder="Paste your learning ID (UUID)" autocomplete="off" />
+        <button type="button" class="small" id="applyResume">Resume</button>
+      </div>
+      <p class="note-persist">Same browser: your ID stays in <strong>local storage</strong> after you close the tab. Server: chat memory is stored in SQLite so progress survives API restarts. Anyone with the ID can load that thread—treat it like a private bookmark.</p>
+    </header>
+
+    <div id="log" aria-live="polite"></div>
+
+    <div class="composer">
+      <div class="lane-row">
+        <label for="agentLane"><svg class="icon" aria-hidden="true"><use href="#i-compass"/></svg> Coach focus</label>
+        <select id="agentLane" aria-label="Coach focus">
+          <option value="auto">Auto (from assessment / general)</option>
+          <option value="general">General (all levels)</option>
+          <option value="jhs">JHS · BECE</option>
+          <option value="shs">SHS · WASSCE</option>
+          <option value="tertiary">Tertiary · admissions</option>
+          <option value="educator">Teachers &amp; parents</option>
+        </select>
+      </div>
+      <label class="hints-label">
+        <input type="checkbox" id="hintsMode" />
+        <svg class="icon" aria-hidden="true"><use href="#i-lightbulb"/></svg>
+        Hints first (shorter nudges — better for homework honour)
+      </label>
+      <form class="composer-inner" id="form">
+        <div class="composer-side">
+          <input
+            type="file"
+            id="fileInput"
+            accept=".txt,.pdf,.doc,.docx,.rtf,.odt,.html,.htm,.csv,.md,text/plain,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+            style="display: none"
+            aria-hidden="true"
+          />
+          <button type="button" class="attach-btn" id="attachBtn" title="Attach .txt, .pdf, .docx, …">
+            <svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg> Attach
+          </button>
+          <span class="file-chip" id="fileChip" title=""></span>
+        </div>
+        <textarea id="input" rows="2" placeholder="Ask a question, or attach a document (optionally add instructions here)…" autocomplete="off"></textarea>
+        <button type="submit" id="send"><span>Send</span><svg class="icon send-ic" aria-hidden="true"><use href="#i-send"/></svg></button>
+      </form>
+      <p class="hint">Attachments: text is extracted on the server (no OCR). Old Word .doc files—export to PDF or DOCX first. By continuing, you agree this is educational support.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const log = document.getElementById("log");
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const sendBtn = document.getElementById("send");
+      const newChatBtn = document.getElementById("newChat");
+      const copyIdBtn = document.getElementById("copyId");
+      const applyResumeBtn = document.getElementById("applyResume");
+      const resumeInput = document.getElementById("resumeInput");
+      const threadLabel = document.getElementById("threadLabel");
+      const hintsMode = document.getElementById("hintsMode");
+      const fileInput = document.getElementById("fileInput");
+      const attachBtn = document.getElementById("attachBtn");
+      const fileChip = document.getElementById("fileChip");
+
+      const STORAGE_KEY = "ghana_study_thread_id";
+      const PROFILE_KEY = "ghana_learner_profile";
+      const AGENT_LANE_KEY = "ghana_agent_lane";
+      let threadId = localStorage.getItem(STORAGE_KEY) || null;
+
+      const agentLaneEl = document.getElementById("agentLane");
+      (function initAgentLane() {
+        try {
+          var saved = localStorage.getItem(AGENT_LANE_KEY);
+          if (saved && agentLaneEl) {
+            var opt = agentLaneEl.querySelector('option[value="' + saved + '"]');
+            if (opt) agentLaneEl.value = saved;
+          }
+        } catch (_) {}
+      })();
+      agentLaneEl.addEventListener("change", function () {
+        try {
+          localStorage.setItem(AGENT_LANE_KEY, agentLaneEl.value);
+        } catch (_) {}
+      });
+
+      attachBtn.addEventListener("click", function () {
+        fileInput.click();
+      });
+      fileInput.addEventListener("change", function () {
+        if (fileInput.files && fileInput.files[0]) {
+          fileChip.textContent = fileInput.files[0].name;
+          fileChip.title = fileInput.files[0].name;
+        } else {
+          fileChip.textContent = "";
+          fileChip.title = "";
+        }
+      });
+
+      function readProfile() {
+        try {
+          const raw = localStorage.getItem(PROFILE_KEY);
+          if (!raw) return null;
+          const o = JSON.parse(raw);
+          if (!o || typeof o !== "object") return null;
+          return o;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function escapeHtml(s) {
+        const d = document.createElement("div");
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function renderProfileBanner() {
+        const el = document.getElementById("profileBanner");
+        const p = readProfile();
+        if (!p) {
+          el.hidden = true;
+          el.innerHTML = "";
+          return;
+        }
+        el.hidden = false;
+        var parts = [];
+        if (p.education_level) parts.push(String(p.education_level).replace(/_/g, " "));
+        if (p.subject_focus) parts.push(p.subject_focus);
+        if (p.region) parts.push(p.region);
+        if (p.shs_track && p.shs_track !== "na") parts.push("track: " + p.shs_track.replace(/_/g, " "));
+        var head = "<strong>Personalised from your assessment</strong>";
+        var line = parts.length ? parts.join(" · ") : "Assessment on file";
+        var goals = "";
+        if (p.goals && String(p.goals).trim()) {
+          var g = String(p.goals).trim();
+          goals =
+            "<div class='welcome-assessment'><em>Goals:</em> " +
+            escapeHtml(g.length > 180 ? g.slice(0, 180) + "…" : g) +
+            "</div>";
+        }
+        var welcome = "";
+        try {
+          if (sessionStorage.getItem("ghana_show_assessment_welcome") === "1") {
+            sessionStorage.removeItem("ghana_show_assessment_welcome");
+            welcome =
+              "<div class='welcome-assessment'>New thread from your assessment — say hello or ask your first question. The coach uses your profile on the first reply.</div>";
+          }
+        } catch (_) {}
+        el.innerHTML = head + line + goals + welcome;
+      }
+
+      function updateThreadLabel() {
+        threadLabel.textContent = threadId
+          ? "Learning ID: " + threadId.slice(0, 8) + "…"
+          : "Learning ID: new (after first message)";
+      }
+
+      function appendMessage(role, text, isError) {
+        const wrap = document.createElement("div");
+        wrap.className = "msg " + role + (isError ? " error" : "");
+        const roleEl = document.createElement("div");
+        roleEl.className = "role";
+        var ic =
+          role === "user"
+            ? "#i-user"
+            : isError
+            ? "#i-alert"
+            : "#i-graduation";
+        var label = role === "user" ? "You" : isError ? "System" : "Coach";
+        roleEl.innerHTML =
+          '<svg class="icon role-ic" aria-hidden="true"><use href="' +
+          ic +
+          '"/></svg><span class="role-text">' +
+          label +
+          "</span>";
+        const body = document.createElement("div");
+        body.className = "body";
+        body.textContent = text;
+        wrap.appendChild(roleEl);
+        wrap.appendChild(body);
+        log.appendChild(wrap);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function showTyping(on) {
+        let t = document.getElementById("typing");
+        if (on) {
+          if (!t) {
+            t = document.createElement("div");
+            t.id = "typing";
+            t.className = "typing";
+            t.innerHTML =
+              '<svg class="icon" aria-hidden="true" style="color:var(--gold)"><use href="#i-graduation"/></svg><span class="typing-label">Thinking</span><span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>';
+            log.appendChild(t);
+          }
+        } else if (t) {
+          t.remove();
+        }
+        log.scrollTop = log.scrollHeight;
+      }
+
+      updateThreadLabel();
+      renderProfileBanner();
+
+      const clearProfileBtn = document.getElementById("clearProfile");
+      clearProfileBtn.addEventListener("click", function () {
+        try {
+          localStorage.removeItem(PROFILE_KEY);
+        } catch (_) {}
+        renderProfileBanner();
+      });
+
+      async function loadHistory() {
+        if (!threadId) return;
+        try {
+          const res = await fetch(
+            "/workflow/history?thread_id=" + encodeURIComponent(threadId),
+            { credentials: "include" }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data.messages || !data.messages.length) return;
+          log.innerHTML = "";
+          for (let i = 0; i < data.messages.length; i++) {
+            const m = data.messages[i];
+            appendMessage(m.role === "user" ? "user" : "assistant", m.content);
+          }
+        } catch (_) { /* offline or server warming up */ }
+      }
+
+      loadHistory();
+
+      newChatBtn.addEventListener("click", function () {
+        threadId = null;
+        localStorage.removeItem(STORAGE_KEY);
+        resumeInput.value = "";
+        log.innerHTML = "";
+        fileInput.value = "";
+        fileChip.textContent = "";
+        fileChip.title = "";
+        updateThreadLabel();
+        input.focus();
+      });
+
+      copyIdBtn.addEventListener("click", async function () {
+        if (!threadId) {
+          alert("Send a message first to get a learning ID.");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(threadId);
+          copyIdBtn.textContent = "Copied!";
+          setTimeout(function () {
+            copyIdBtn.textContent = "Copy learning ID";
+          }, 2000);
+        } catch (_) {
+          prompt("Copy this learning ID:", threadId);
+        }
+      });
+
+      applyResumeBtn.addEventListener("click", async function () {
+        const v = resumeInput.value.trim();
+        if (!v) return;
+        threadId = v;
+        localStorage.setItem(STORAGE_KEY, threadId);
+        updateThreadLabel();
+        log.innerHTML = "";
+        await loadHistory();
+        input.focus();
+      });
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const text = input.value.trim();
+        var attachedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+        if (!text && !attachedFile) return;
+
+        var userDisplay = text;
+        if (attachedFile) {
+          userDisplay = text
+            ? text + "\n📎 " + attachedFile.name
+            : "📎 " + attachedFile.name;
+        }
+        input.value = "";
+        appendMessage("user", userDisplay);
+        sendBtn.disabled = true;
+        showTyping(true);
+
+        try {
+          var res;
+          if (attachedFile) {
+            var fd = new FormData();
+            fd.append("file", attachedFile);
+            fd.append("message", text);
+            if (threadId) fd.append("thread_id", threadId);
+            fd.append("coaching_mode", hintsMode.checked ? "hints" : "full");
+            fd.append("agent_lane", agentLaneEl.value || "auto");
+            var profA = readProfile();
+            if (profA) fd.append("learner_profile_json", JSON.stringify(profA));
+            res = await fetch("/workflow/upload", {
+              method: "POST",
+              credentials: "include",
+              body: fd,
+            });
+            fileInput.value = "";
+            fileChip.textContent = "";
+            fileChip.title = "";
+          } else {
+            var payload = {
+              message: text,
+              thread_id: threadId || undefined,
+              coaching_mode: hintsMode.checked ? "hints" : "full",
+              agent_lane: agentLaneEl.value || "auto",
+            };
+            var prof = readProfile();
+            if (prof) payload.learner_profile = prof;
+            res = await fetch("/workflow", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+          }
+
+          const raw = await res.text();
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            data = { detail: raw || "Invalid response" };
+          }
+
+          if (!res.ok) {
+            var detail =
+              typeof data.detail === "string"
+                ? data.detail
+                : JSON.stringify(data.detail || data);
+            if (res.status === 401) {
+              detail +=
+                " Open /gate (or ask your admin for the API header X-App-Access-Code).";
+            }
+            appendMessage("assistant", detail, true);
+            return;
+          }
+
+          threadId = data.thread_id;
+          localStorage.setItem(STORAGE_KEY, threadId);
+          updateThreadLabel();
+          appendMessage("assistant", data.reply || "(Empty reply)");
+        } catch (err) {
+          appendMessage(
+            "assistant",
+            "Network error: " + (err && err.message ? err.message : String(err)),
+            true
+          );
+        } finally {
+          showTyping(false);
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      });
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          form.requestSubmit();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

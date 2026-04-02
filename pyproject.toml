@@ -1,0 +1,36 @@
+[project]
+name = "fastapi-langgraph-mcp-agent"
+version = "0.1.0"
+description = "FastAPI + LangGraph + MCP agent"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.115",
+    "uvicorn[standard]>=0.30",
+    "fastmcp>=3.0",
+    "langgraph>=0.2",
+    "langgraph-checkpoint-sqlite>=2.0",
+    "aiosqlite>=0.20",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    "langchain-mcp-adapters>=0.2",
+    "httpx>=0.27",
+    "wikipedia>=1.4",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "slowapi>=0.1.9",
+    "itsdangerous>=2.0",
+    "pypdf>=4.0",
+    "striprtf>=0.0.26",
+]
+
+[project.optional-dependencies]
+redis = ["redis>=5.0"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
