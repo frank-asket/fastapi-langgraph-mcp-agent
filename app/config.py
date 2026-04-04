@@ -28,6 +28,8 @@ class Settings(BaseSettings):
 
     #: Signed cookie secret (required for sessions). Change in production.
     session_secret: str = Field(default="change-me-use-long-random-secret-for-sessions")
+    #: If True, session cookie is only sent over HTTPS (set in production behind TLS).
+    session_cookie_secure: bool = Field(default=False)
 
     #: When set, /workflow and /chat API require gate or X-App-Access-Code header.
     app_access_code: str | None = None
@@ -106,6 +108,8 @@ class Settings(BaseSettings):
     clerk_reject_org_pending_status: bool = Field(default=False)
     #: Svix signing secret from Clerk dashboard (starts with whsec_) for POST /webhooks/clerk.
     clerk_webhook_secret: str | None = None
+    #: Send a welcome / onboarding email (SendGrid) on Clerk user.created when SENDGRID_API_KEY is set.
+    clerk_send_welcome_email: bool = Field(default=True)
     #: SQLite backing store updated from Clerk webhooks (user.updated, etc.).
     clerk_entitlements_db_path: str = Field(default="data/clerk_entitlements.db")
     #: If True, workflow routes require subscription for Clerk users (see JWT claim and/or DB below).

@@ -97,6 +97,9 @@ async def service_info() -> dict[str, Any]:
         "timetable_notifications_enabled": settings.timetable_notifications_enabled,
         "timetable_notify_ai_enabled": settings.timetable_notify_ai_enabled,
         "sendgrid_configured": bool((settings.sendgrid_api_key or "").strip()),
+        "clerk_welcome_email_ready": settings.clerk_send_welcome_email
+        and bool((settings.sendgrid_api_key or "").strip())
+        and bool((settings.clerk_webhook_secret or "").strip()),
         "mcp_http": "/agent/mcp",
         "mcp_client_url_hint": settings.resolved_mcp_http_url,
         "agent_lanes": sorted(VALID_AGENT_LANES),

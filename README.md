@@ -91,6 +91,8 @@ Set **`STUDY_COACH_FRONTEND_URL`** (e.g. `http://127.0.0.1:3000`) on the API so 
 
 **Local dev (two terminals):** `make dev-api` and `make dev-web` (after `make install-web` and a configured **`.env`** / **`frontend/.env.local`**).
 
+**Production:** deploy **`frontend/`** to Vercel (root directory `frontend`, set **`NEXT_PUBLIC_API_URL`** to your public API). Run the FastAPI app from the root **`Dockerfile`** on a host with a **persistent volume** for `/data` (SQLite) and **`SESSION_COOKIE_SECURE=true`**. Full steps: **[DEPLOY.md](DEPLOY.md)**.
+
 **Studio UI:** **`/studio`** — dashboard with personalised starters, **`/studio/chat`** coach, **`/studio/timetable`** (**import** PDF / DOCX / images via **`POST /timetable/import`** with **`OPENAI_API_KEY`**; internal reference grid PNG aligns parsing; schedule shows in a **week calendar** beside **`/studio/chat`** only; **goals** for nudges sync from the **assessment** profile; prep/rest/focus nudges + optional **SendGrid**), **`/studio/library`** prompts (Study Coach dark/gold styling). Protected by Clerk when **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** is set. Brand logo for emails: **`frontend/public/images/landing/kifinal.png`** (inline in HTML). Marketing images ship under **`frontend/public/images/landing/`**.
 
 **If the UI breaks** (buttons dead, console **404** on `/_next/static/chunks/main-app.js` or **`app-pages-internals.js`**): stop the dev server, run **`npm run clean`** in **`frontend/`**, then **`npm run dev`** again. That usually means **`frontend/.next`** mixed a **`next build`** output with **`next dev`** or a stale cache.
@@ -103,6 +105,7 @@ Set **`STUDY_COACH_FRONTEND_URL`** (e.g. `http://127.0.0.1:3000`) on the API so 
 | `OPENAI_API_KEY` | LLM calls (example provider). |
 | `REDIS_URL` | e.g. `redis://localhost:6379` for MCP event store. |
 | `SESSION_SECRET` | Signs session cookies (use a long random value when using `/gate`). |
+| `SESSION_COOKIE_SECURE` | If `true`, session cookies are HTTPS-only (use in production). |
 | `APP_ACCESS_CODE` | If non-empty, enables gate + requires session or `X-App-Access-Code`. |
 | `BIND_THREADS_TO_SESSION` | If `true`, locks each `thread_id` to the first browser session (see `.env.example`). |
 | `THREAD_REGISTRY_DB_PATH` | SQLite file for thread ownership when bind is on. |

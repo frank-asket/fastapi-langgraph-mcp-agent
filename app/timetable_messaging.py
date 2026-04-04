@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import html
 import logging
 from pathlib import Path
 
@@ -84,6 +85,68 @@ def focus_copy(goals_summary: str | None) -> tuple[str, str, str]:
 <p class="footer">Personalised from your goals and timetable settings.</p></div>
 """
     return subj, plain, html
+
+
+def welcome_signup_copy(
+    first_name: str | None,
+    *,
+    coach_url: str | None,
+    assessment_url: str | None,
+    timetable_url: str | None,
+) -> tuple[str, str, str]:
+    """Welcome + light product marketing after Clerk user.created (subject, plain, html_inner)."""
+    raw_name = (first_name or "").strip()
+    hi_plain = f"Hi {raw_name}," if raw_name else "Hi there,"
+    hi_html = f"Hi {html.escape(raw_name)}," if raw_name else "Hi there,"
+
+    subj = "Welcome to Klingbo Study Coach"
+
+    lines_plain = [
+        hi_plain,
+        "",
+        "Thanks for creating your account. Study Coach is built for learners in Ghana and across the continent—",
+        "personalised coaching, document-aware help, and a workspace for prompts and your class timetable.",
+        "",
+    ]
+    if coach_url:
+        lines_plain.append(f"Open the coach: {coach_url}")
+    if assessment_url:
+        lines_plain.append(f"Optional assessment (levels & goals): {assessment_url}")
+    if timetable_url:
+        lines_plain.append(f"Import your weekly schedule: {timetable_url}")
+    lines_plain.extend(
+        [
+            "",
+            "You can manage email and in-app nudges under Account → Notification settings in the app.",
+            "",
+            "— Klingbo Study Coach",
+        ]
+    )
+    plain = "\n".join(lines_plain)
+
+    links_html = ""
+    if coach_url:
+        c = html.escape(coach_url, quote=True)
+        links_html += f'<p><a href="{c}" style="color:#fbbf24;">Open Study Coach</a></p>'
+    if assessment_url:
+        a = html.escape(assessment_url, quote=True)
+        links_html += f'<p><a href="{a}" style="color:#fbbf24;">Take the quick assessment</a> — level, programme, goals.</p>'
+    if timetable_url:
+        t = html.escape(timetable_url, quote=True)
+        links_html += f'<p><a href="{t}" style="color:#fbbf24;">Import your timetable</a> for prep and rest nudges.</p>'
+
+    html_inner = f"""
+<div class="wrap"><div class="card">
+  <h1>Welcome aboard</h1>
+  <p>{hi_html}</p>
+  <p>Thanks for creating your account. <strong>Study Coach</strong> is built for learners in Ghana and across the continent—personalised AI coaching, help with your materials, and tools to stay organised.</p>
+  {links_html}
+  <p>Tip: use <strong>Account → Notification settings</strong> to choose email and in-app nudges tied to your schedule.</p>
+  <p class="meta">— Klingbo Study Coach</p>
+</div>
+<p class="footer">Educational support only. Verify exam and policy details with your school and official sources.</p></div>
+"""
+    return subj, plain, html_inner
 
 
 def _load_logo_b64(settings: Settings) -> tuple[str | None, str | None]:

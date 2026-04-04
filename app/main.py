@@ -30,10 +30,11 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+_sec = get_settings()
 app.add_middleware(
     SessionMiddleware,
-    secret_key=get_settings().session_secret,
-    https_only=False,
+    secret_key=_sec.session_secret,
+    https_only=_sec.session_cookie_secure,
     same_site="lax",
     max_age=14 * 24 * 3600,
 )
