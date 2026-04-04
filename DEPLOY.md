@@ -28,15 +28,82 @@ Set secrets from `.env.example` as needed: Clerk (`CLERK_*`), SendGrid, `CLERK_W
 
 **Behind a reverse proxy**, the image already runs Uvicorn with `--proxy-headers` and `--forwarded-allow-ips='*'` so `X-Forwarded-Proto` is honored for URL generation when your platform sets it.
 
-### Example: Fly.io
+### Fly.io — full walkthrough
 
-1. `fly launch --dockerfile Dockerfile` (no Dockerfile CMD override).
-2. Create a volume: `fly volumes create study_coach_data --region <region> --size 3`
-3. In `fly.toml`, mount it at `/data` and set `min_machines_running = 1` if you rely on the timetable notification tick.
-4. Set secrets: `fly secrets set SESSION_SECRET=... OPENAI_API_KEY=...` (and the rest).
-5. Point DNS at the Fly app; set `PUBLIC_BASE_URL` and `CORS_ORIGINS`/`STUDY_COACH_FRONTEND_URL` to real HTTPS URLs.
+Prerequisites: [install `flyctl`](https://fly.io/docs/hands-on/install-flyctl/), `fly auth signup` or `fly auth login`, and this repo cloned locally. Deploy from the **repository root** (where `Dockerfile` and `fly.toml` live). The frontend stays on **Vercel**; Fly runs **only the FastAPI API**.
 
-Similar patterns work on **Railway**, **Render**, or a **VPS** with Docker and a volume.
+**1. Name and register the app**
+
+- Pick a globally unique app name (e.g. `yourname-study-coach-api`).
+- Either:
+  - **A)** Edit `fly.toml` and set `app = "yourname-study-coach-api"`, then run `fly apps create yourname-study-coach-api --org personal`, **or**
+  - **B)** Run `fly launch` interactively once; if it generates a new `fly.toml`, merge the important bits (port `8000`, mounts, checks) with the repo’s `fly.toml` or replace `app` / `primary_region` to match.
+
+Keep **`primary_region`** (e.g. `lhr`, `fra`, `iad`) where you want the machine to run; the volume **must** use the **same** region (next step).
+
+**2. Persistent disk for SQLite**
+
+The image expects databases under **`/data`**. Create a volume **before** the first deploy that uses `[[mounts]]`:
+
+```bash
+fly volumes create study_coach_data --region lhr --size 3
+```
+
+Use the same `--region` as `primary_region` in `fly.toml`. Name `study_coach_data` must match `[[mounts]]` → `source` in `fly.toml`. For this app, use **one machine** (`min_machines_running = 1` in `fly.toml`) so one SQLite volume is enough.
+
+**3. Secrets (environment)**
+
+Set production config as Fly secrets (not committed to git). Example — adjust to your real URLs:
+
+```bash
+fly secrets set \
+  OPENAI_API_KEY="sk-..." \
+  SESSION_SECRET="$(openssl rand -hex 32)" \
+  SESSION_COOKIE_SECURE=true \
+  PUBLIC_BASE_URL="https://yourname-study-coach-api.fly.dev" \
+  CORS_ORIGINS="https://your-app.vercel.app" \
+  STUDY_COACH_FRONTEND_URL="https://your-app.vercel.app"
+```
+
+Add more from `.env.example` as needed, for example:
+
+- Clerk: `CLERK_JWT_ISSUER`, `CLERK_WEBHOOK_SECRET`, `CLERK_AUTHORIZED_PARTIES`, `CLERK_SEND_WELCOME_EMAIL`, etc.
+- SendGrid: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`
+- Optional: `APP_ACCESS_CODE`, `API_KEYS`, `CLERK_ONLY_AUTH`, `MCP_HTTP_URL` (only if you override defaults)
+
+**4. Deploy**
+
+```bash
+fly deploy
+```
+
+**5. DNS and URLs**
+
+- Default host: `https://<app-name>.fly.dev`. Put that (no trailing slash) in `PUBLIC_BASE_URL`, and in the Vercel app as **`NEXT_PUBLIC_API_URL`**.
+- Custom domain (optional): `fly certs add api.yourdomain.com` and add the CNAME/A records Fly shows; then set `PUBLIC_BASE_URL` / Clerk webhookURL to `https://api.yourdomain.com`.
+
+**6. Smoke checks**
+
+- `curl -sS https://<app-name>.fly.dev/health` → `{"status":"ok"}`
+- `curl -sS https://<app-name>.fly.dev/service` → JSON service map
+- In Clerk, webhook endpoint: `POST https://<your-api-host>/webhooks/clerk` with `CLERK_WEBHOOK_SECRET` set on Fly.
+
+**7. Logs and ops**
+
+- `fly logs`
+- `fly ssh console` (debug; data lives under `/data` on the volume)
+- Scale / more regions: for SQLite + in-process timetable scheduler, **stay at one machine** unless you move to a shared database and a separate worker.
+
+Repo **`fly.toml`** sets `internal_port = 8000`, **`/health`** checks, **HTTPS** to the app, **`/data` mount**, and **`auto_stop_machines = "off"`** so background work (timetable tick) is not paused unexpectedly. Change `app` and `primary_region` to yours before the first deploy.
+
+### Railway (API)
+
+1. In [Railway](https://railway.app/), create a project → **New** → **GitHub Repo** (this repo) or **Empty** → **Dockerfile** deploy from the **repository root** (same `Dockerfile` as Fly).
+2. **Variables** (mirror root `.env`): at minimum `OPENAI_API_KEY`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE=true`, `PUBLIC_BASE_URL` (your **canonical** API URL, e.g. `https://coach.klingbo.com` with custom domain, not only the default `*.up.railway.app` name—so redirects and MCP URLs stay consistent), `CORS_ORIGINS` (e.g. `https://study-coach-nu.vercel.app,https://study.klingbo.com`), `STUDY_COACH_FRONTEND_URL` (e.g. `https://study.klingbo.com`), Clerk/SendGrid keys as needed. The Docker image defaults SQLite paths under **`/data`** — add a **Volume** in Railway mounted at **`/data`** so data survives redeploys.
+3. **Networking**: generate a public domain; set **`PORT`** handling: this image listens on **8000** (`EXPOSE 8000`). In Railway, set the service **port** to **8000** if the UI asks for an internal port.
+4. Point **Vercel** `NEXT_PUBLIC_API_URL` at the same URL as `PUBLIC_BASE_URL`. Clerk webhook: `POST https://<railway-host>/webhooks/clerk`.
+
+Similar patterns work on **Render** or a **VPS** with Docker and a volume.
 
 ## 2. Deploy the frontend (Vercel)
 

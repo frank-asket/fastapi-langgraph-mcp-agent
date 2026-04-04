@@ -167,16 +167,16 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
   }, [chat.messages.length, onLogScroll]);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 items-stretch">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-sc-bg">
-        <div className="flex items-center justify-between border-b border-sc-line bg-sc-elev px-4 py-3 transition-shadow duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-          <div className="flex items-start gap-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch xl:flex-row">
+      <div className="flex min-h-[min(52dvh,520px)] min-w-0 flex-1 flex-col bg-sc-bg xl:min-h-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sc-line bg-sc-elev px-3 py-2.5 transition-shadow duration-300 sm:gap-3 sm:px-4 sm:py-3 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+          <div className="flex min-w-0 items-start gap-2 sm:gap-3">
             <span className="sc-fade-up mt-0.5">
               <AppLogo size={36} />
             </span>
-            <div>
-              <h1 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Coach</h1>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8c9a90]">
+            <div className="min-w-0">
+              <h1 className="font-[family-name:var(--font-syne)] text-base font-bold text-white sm:text-lg">Coach</h1>
+              <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[0.65rem] text-[#8c9a90] sm:text-xs">
                 <svg className="h-3 w-3 text-sc-gold/60" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
                 </svg>
@@ -184,11 +184,11 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:gap-2">
             <button
               type="button"
               onClick={chat.newChat}
-              className="flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist transition hover:border-sc-gold hover:text-sc-gold active:scale-[0.98]"
+              className="flex min-h-10 items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-2 text-[0.7rem] font-semibold text-sc-mist transition hover:border-sc-gold hover:text-sc-gold active:scale-[0.98] sm:text-xs"
             >
               <IconChatNew />
               New chat
@@ -196,7 +196,7 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
             <button
               type="button"
               onClick={() => void chat.copyThreadId()}
-              className="flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist transition hover:border-sc-gold hover:text-sc-gold active:scale-[0.98]"
+              className="flex min-h-10 items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-2 text-[0.7rem] font-semibold text-sc-mist transition hover:border-sc-gold hover:text-sc-gold active:scale-[0.98] sm:text-xs"
             >
               <IconCopy />
               Copy ID
@@ -323,7 +323,7 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
           )}
         </div>
 
-        <div className="border-t border-sc-line bg-sc-elev p-4 transition-colors duration-300">
+        <div className="border-t border-sc-line bg-sc-elev p-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] transition-colors duration-300 sm:p-4">
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             <select
               value={chat.agentLane}

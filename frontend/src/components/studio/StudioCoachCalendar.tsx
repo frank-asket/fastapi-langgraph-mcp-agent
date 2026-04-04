@@ -224,7 +224,7 @@ export function StudioCoachCalendar({ getToken }: Props) {
   const goToday = () => setCursorDate(new Date());
 
   return (
-    <aside className="flex max-h-full min-h-0 w-full min-w-0 max-w-[min(100%,min(520px,50%))] shrink-0 flex-col self-stretch overflow-hidden border-l border-sc-line bg-sc-bg sm:min-w-[240px]">
+    <aside className="flex max-h-[min(48dvh,520px)] min-h-0 w-full min-w-0 shrink-0 flex-col overflow-hidden border-t border-sc-line bg-sc-bg xl:max-h-full xl:max-w-[min(520px,50%)] xl:self-stretch xl:border-l xl:border-t-0 sm:min-w-0">
       <div className="shrink-0 space-y-2 border-b border-sc-line/80 px-2 py-2 sm:px-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-[family-name:var(--font-syne)] text-[0.7rem] font-bold uppercase tracking-wide text-sc-gold sm:text-xs">

@@ -18,7 +18,7 @@ export default function HomePage() {
         }}
       />
       <div className="relative mx-auto max-w-[980px] px-5 py-10 pb-16">
-      <header className="mb-14 flex flex-wrap items-start justify-between gap-4">
+      <header className="mb-12 flex flex-col gap-5 sm:mb-14 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
         <Link
           href="/"
           className="flex items-center gap-3 transition opacity-90 hover:opacity-100"
@@ -28,7 +28,9 @@ export default function HomePage() {
             Study <span className="text-sc-gold">Coach</span>
           </div>
         </Link>
-        <SiteNav />
+        <div className="w-full min-w-0 md:w-auto md:max-w-[min(100%,42rem)] md:justify-end">
+          <SiteNav />
+        </div>
       </header>
 
       <section className="mb-12 grid gap-8 lg:grid-cols-[1fr_minmax(280px,44%)] lg:items-center lg:gap-12">

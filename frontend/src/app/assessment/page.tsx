@@ -227,7 +227,7 @@ export default function AssessmentPage() {
     step === 1 && (educationLevel === "university" || educationLevel === "technical_university");
 
   return (
-    <div className="min-h-dvh bg-[#f3efe6] px-4 py-7 text-[#152119]">
+    <div className="min-h-dvh bg-[#f3efe6] px-4 py-6 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))] pt-[max(1.25rem,env(safe-area-inset-top,0px))] text-[#152119] sm:py-7">
       <div className="mx-auto max-w-[520px] pb-12">
         <div className="mb-4">
           <Link href="/" className="text-sm font-semibold text-[#9a7b1a] hover:underline">

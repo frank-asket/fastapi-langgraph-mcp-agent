@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Syne, Figtree } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
     "Vertical AI platform for African education — personalized tutoring, document intelligence, and study coaching.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,7 +35,11 @@ export default function RootLayout({
 
   const tree = (
     <html lang="en">
-      <body className={`${syne.variable} ${figtree.variable} antialiased`}>{children}</body>
+      <body
+        className={`${syne.variable} ${figtree.variable} min-h-dvh overflow-x-hidden antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 

@@ -6,10 +6,10 @@ export function SiteNav() {
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
   return (
-    <nav className="flex flex-wrap gap-3">
+    <nav className="-mx-1 flex max-w-full gap-2 overflow-x-auto overflow-y-visible px-1 pb-1 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
       <Link
         href="/assessment"
-        className="rounded-full border border-sc-line px-3.5 py-1.5 text-sm font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold"
+        className="shrink-0 rounded-full border border-sc-line px-3.5 py-2 text-sm font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold sm:py-1.5"
       >
         Assessment
       </Link>
@@ -21,13 +21,13 @@ export function SiteNav() {
       </Link>
       <Link
         href="/studio/chat"
-        className="rounded-full border border-sc-gold/25 px-3.5 py-1.5 text-sm font-semibold text-sc-gold hover:border-sc-gold"
+        className="shrink-0 rounded-full border border-sc-gold/25 px-3.5 py-2 text-sm font-semibold text-sc-gold hover:border-sc-gold sm:py-1.5"
       >
         Coach
       </Link>
       <a
         href={apiDocsUrl()}
-        className="rounded-full border border-sc-gold/25 px-3.5 py-1.5 text-sm font-semibold text-sc-gold hover:border-sc-gold"
+        className="shrink-0 rounded-full border border-sc-gold/25 px-3.5 py-2 text-sm font-semibold text-sc-gold hover:border-sc-gold sm:py-1.5"
         target="_blank"
         rel="noreferrer"
       >
@@ -35,14 +35,14 @@ export function SiteNav() {
       </a>
       <a
         href={serviceMapUrl()}
-        className="rounded-full border border-sc-line px-3.5 py-1.5 text-sm font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold"
+        className="shrink-0 rounded-full border border-sc-line px-3.5 py-2 text-sm font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold sm:py-1.5"
         target="_blank"
         rel="noreferrer"
       >
         Service map
       </a>
       {hasClerk && (
-        <span className="ml-auto flex items-center gap-2">
+        <span className="flex shrink-0 items-center gap-2 sm:ml-auto">
           <SignedOut>
             <SignInButton mode="modal">
               <button

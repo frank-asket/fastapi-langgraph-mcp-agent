@@ -27,7 +27,7 @@ export default function StudioLibraryPage() {
   const entries = useMemo(() => personalizedPromptLibrary(profile), [profile]);
 
   return (
-    <div className="overflow-y-auto px-4 py-8 lg:px-10">
+    <div className="overflow-y-auto px-4 py-6 pb-[max(2rem,env(safe-area-inset-bottom,0px))] sm:py-8 lg:px-10">
       <div className="mx-auto max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <AppLogo size={48} />

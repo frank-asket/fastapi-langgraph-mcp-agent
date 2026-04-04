@@ -18,8 +18,15 @@ const promptKids = [
   { href: "/assessment", label: "Assessment", icon: "✏️" },
 ];
 
-export function StudioSidebar() {
+type StudioSidebarProps = {
+  id?: string;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+};
+
+export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onCloseMobile }: StudioSidebarProps) {
   const pathname = usePathname();
+  const closeMobile = () => onCloseMobile?.();
   const [promptsOpen, setPromptsOpen] = useState(true);
   const [accountOpen, setAccountOpen] = useState(true);
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -34,11 +41,24 @@ export function StudioSidebar() {
   const generalSettingsActive = settingsActive && hash !== "notifications";
   const notificationsSettingsActive = settingsActive && hash === "notifications";
 
+  const asideClass =
+    "flex shrink-0 flex-col border-r border-sc-line bg-sc-elev shadow-[4px_0_24px_rgba(0,0,0,0.2)] " +
+    "fixed bottom-0 left-0 z-50 w-[min(20rem,92vw)] max-w-[100vw] " +
+    "top-[calc(3.5rem+env(safe-area-inset-top,0px))] " +
+    "transition-transform duration-200 ease-out motion-reduce:transition-none " +
+    "lg:static lg:bottom-auto lg:left-auto lg:top-auto lg:z-auto lg:h-full lg:w-56 lg:max-w-none lg:translate-x-0 " +
+    "xl:w-64 " +
+    (mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0");
+
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-sc-line bg-sc-elev shadow-[4px_0_24px_rgba(0,0,0,0.2)] lg:w-64">
+    <aside id={id} className={asideClass}>
       <div className="border-b border-sc-line px-4 py-5">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/studio" className="flex min-w-0 flex-1 items-center gap-2.5 font-[family-name:var(--font-syne)] font-bold tracking-tight text-white">
+          <Link
+            href="/studio"
+            onClick={closeMobile}
+            className="flex min-w-0 flex-1 items-center gap-2.5 font-[family-name:var(--font-syne)] font-bold tracking-tight text-white"
+          >
             <AppLogo size={36} />
             <span className="min-w-0 truncate text-[1.05rem] leading-tight">
               Study <span className="text-sc-gold">Coach</span>
@@ -57,6 +77,7 @@ export function StudioSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={closeMobile}
               className={`mb-1 flex items-center gap-2 rounded-xl px-3 py-2.5 font-medium transition ${active ? "bg-sc-line text-sc-gold" : "text-sc-mist hover:bg-sc-line/60 hover:text-sc-gold"}`}
             >
               <span aria-hidden>{item.icon}</span>
@@ -82,6 +103,7 @@ export function StudioSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={closeMobile}
                 className="mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-[0.85rem] text-[#9caaa0] hover:bg-sc-line/50 hover:text-sc-mist"
               >
                 <span aria-hidden>{item.icon}</span>
@@ -93,6 +115,7 @@ export function StudioSidebar() {
 
         <Link
           href="/"
+          onClick={closeMobile}
           className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5 text-[#6a756d] hover:bg-sc-line/50 hover:text-sc-gold"
         >
           ← Marketing home
@@ -108,6 +131,7 @@ export function StudioSidebar() {
           <p className="relative mt-1 text-xs text-[#c4cfc7]">Personalise with assessment and full API access.</p>
           <Link
             href="/assessment"
+            onClick={closeMobile}
             className="relative mt-3 inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur hover:bg-white/20"
           >
             Start assessment
@@ -131,6 +155,7 @@ export function StudioSidebar() {
           <div className="mt-1 space-y-0.5 border-l border-sc-line/80 pl-3">
             <Link
               href="/studio/settings#general"
+              onClick={closeMobile}
               className={`block rounded-lg px-2 py-2 text-[0.85rem] font-medium transition ${
                 generalSettingsActive
                   ? "bg-sc-line text-sc-gold"
@@ -141,6 +166,7 @@ export function StudioSidebar() {
             </Link>
             <Link
               href="/studio/settings#notifications"
+              onClick={closeMobile}
               className={`block rounded-lg px-2 py-2 text-[0.85rem] font-medium transition ${
                 notificationsSettingsActive
                   ? "bg-sc-line text-sc-gold"

@@ -26,5 +26,7 @@ ENV TIMETABLE_BRAND_LOGO_PATH=/app/assets/kifinal.png
 ENV TIMETABLE_REFERENCE_LAYOUT_PATH=/app/assets/timetable-calendar-template.png
 
 EXPOSE 8000
+ENV PORT=8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# Railway (and some hosts) set PORT; Fly maps internal_port in fly.toml — default 8000.
+CMD ["/bin/sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips \"*\""]

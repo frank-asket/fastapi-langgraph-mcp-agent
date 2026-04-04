@@ -57,9 +57,9 @@ function StudioTimetableWorkspaceInner({ getToken }: { getToken?: GetTokenFn }) 
   }
 
   return (
-    <div className="overflow-y-auto px-4 py-8 lg:px-10">
+    <div className="overflow-y-auto px-4 py-6 pb-[max(2rem,env(safe-area-inset-bottom,0px))] sm:py-8 lg:px-10">
       <div className="mx-auto max-w-3xl">
-        <div className="flex flex-wrap items-start gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
           <AppLogo className="bg-sc-bg" size={64} priority />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-sc-gold">Schedule intelligence</p>

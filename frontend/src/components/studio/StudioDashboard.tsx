@@ -27,15 +27,15 @@ export function StudioDashboard() {
   const starters = useMemo(() => personalizedDashboardStarters(profile), [profile]);
 
   return (
-    <div className="overflow-y-auto px-4 py-8 lg:px-10">
+    <div className="overflow-y-auto px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:py-8 lg:px-10">
       <div className="mx-auto max-w-4xl">
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <AppLogo size={56} />
-          <h1 className="font-[family-name:var(--font-syne)] text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="font-[family-name:var(--font-syne)] text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
             Welcome to Study Coach
           </h1>
         </div>
-        <p className="mt-2 max-w-2xl text-lg text-[#9caaa0]">
+        <p className="mt-2 max-w-2xl text-base text-[#9caaa0] sm:text-lg">
           Your workspace for coaching, prompts, and notes—same engine as the marketing site, styled to match. Open{" "}
           <Link className="font-semibold text-sc-gold underline hover:text-sc-mist" href="/studio/chat">
             Coach
