@@ -28,7 +28,7 @@ export default function HomePage() {
             Study <span className="text-sc-gold">Coach</span>
           </div>
         </Link>
-        <div className="w-full min-w-0 md:w-auto md:max-w-[min(100%,42rem)] md:justify-end">
+        <div className="flex w-full min-w-0 md:w-auto md:max-w-[min(100%,42rem)] md:justify-end">
           <SiteNav />
         </div>
       </header>
