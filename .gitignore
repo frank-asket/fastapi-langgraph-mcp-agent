@@ -8,7 +8,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-data/
+# SQLite / local API data at repo root only (not frontend/src/data)
+/data/
 
 # Next.js
 frontend/node_modules/
