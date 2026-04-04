@@ -27,7 +27,7 @@ def education_level_to_lane(level: str | None) -> str:
         return "jhs"
     if key in ("shs", "senior_high", "secondary"):
         return "shs"
-    if key in ("tertiary", "university", "college"):
+    if key in ("tertiary", "university", "technical_university", "college"):
         return "tertiary"
     if key in ("educator_parent", "educator", "teacher", "parent"):
         return "educator"

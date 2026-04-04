@@ -1,6 +1,8 @@
-# FastAPI + LangGraph + MCP Agent
+# Study Coach — API backend
 
-Product-grade pattern: **FastAPI** exposes a stable HTTP API, **FastMCP** serves tools and system prompts over the [Model Context Protocol](https://modelcontextprotocol.io/), and **LangGraph** runs the agent loop (reason → tool → observe → repeat) with optional checkpointed memory.
+**Study Coach** is a vertical AI platform built for **African education**: personalized tutoring that understands local programmes, **document intelligence** on your materials, and an architecture aimed at **offline-capable** use where connectivity is limited. We focus on Ghanaian learners (GES, SHS, WASSCE, tertiary) while staying relevant across the continent—making expert-level academic support more accessible **24/7** at a lower cost than traditional tutoring, without replacing teachers.
+
+Under the hood this repo uses **FastAPI** for the HTTP API, **FastMCP** for tools and prompts over the [Model Context Protocol](https://modelcontextprotocol.io/), and **LangGraph** for the agent loop (reason → tool → observe → repeat) with optional checkpointed memory.
 
 ## Architecture
 
@@ -37,8 +39,8 @@ flowchart LR
 
 ## Features
 
-- **Landing** at **`/`** (marketing page) and **`/assessment`** (short questionnaire → personalised **`/chat`**).
-- **Web UI** at **`/chat`**: calls `POST /workflow` with optional **`learner_profile`** on the **first** turn of a new thread (assessment results), plus **`thread_id`** for memory. **`coaching_mode`**: `full` (default) or `hints` (shorter nudges).
+- **Landing** at **`/`** (marketing page) and **`/assessment`** (short questionnaire → personalised **`/studio/chat`** on the Next app).
+- **Next.js web UI** at **`/studio`** and **`/studio/chat`**: calls `POST /workflow` with optional **`learner_profile`** on the **first** turn of a new thread (assessment results), plus **`thread_id`** for memory. **`coaching_mode`**: `full` (default) or `hints` (shorter nudges).
 - **Gate** at **`/gate`**: HTML form sets a session when **`APP_ACCESS_CODE`** is set; API clients can send **`X-App-Access-Code`** instead. The chat UI uses `credentials: "include"` so cookies work.
 - **Service map** (JSON) at **`/service`** (formerly the root JSON).
 - **Learning progress**: `thread_id` is stored in **localStorage** (survives tab close) and chat state in **SQLite** (`CHECKPOINT_SQLITE_PATH`, default `data/langgraph_checkpoints.db`) so students can continue after the API restarts. **`GET /workflow/history`** reloads past turns. Treat `thread_id` like a private link. With **`BIND_THREADS_TO_SESSION=true`**, the first session that uses a `thread_id` owns it (cross-device resume with the same learning ID still works if **`false`**).
@@ -58,23 +60,46 @@ flowchart LR
 
 ```text
 fastapi-langgraph-mcp-agent/
+├── Makefile                # dev-api, dev-web, check
 ├── README.md
-├── pyproject.toml          # or requirements.txt
+├── pyproject.toml
 ├── .env.example
 ├── app/
-│   ├── main.py             # FastAPI app, lifespan, routes, /chat UI
-│   ├── static/
-│   │   └── chat.html       # Browser chat front-end
-│   ├── mcp_server/
-│   │   └── server.py       # FastMCP: tools, prompts, http_app
-│   └── workflows/
-│       └── graph.py        # LangGraph: state, nodes, compile + checkpointer
+│   ├── main.py             # App factory: middleware, mounts, include_router
+│   ├── routers/            # Route modules (site, health, workflow, webhooks)
+│   ├── schemas.py          # Pydantic API models
+│   ├── workflow_ops.py     # LangGraph invoke, history, uploads, SSE
+│   ├── limiting.py         # SlowAPI limiter
+│   ├── lifespan.py         # SQLite checkpointer startup
+│   ├── mcp_http.py         # Mounted FastMCP app
+│   ├── static/             # Access gate HTML only (APP_ACCESS_CODE); marketing/chat live in frontend/
+│   ├── mcp_server/server.py
+│   └── workflows/graph.py
+└── frontend/               # Next.js 15 (home, assessment, /studio)
 ```
+
+## Next.js frontend (optional)
+
+The **`frontend/`** directory is a **Next.js 15** app (App Router): landing page, multi-step **assessment**, and **`/studio`** workspace (dashboard + coach + scratch pad) that calls the same **`POST /workflow`**, **`POST /workflow/upload`**, and **`GET /workflow/history`** endpoints as the API.
+
+1. Run the API (e.g. on **http://127.0.0.1:8000**).
+2. Copy **`frontend/.env.local.example`** to **`frontend/.env.local`** and set **`NEXT_PUBLIC_API_URL`**.
+3. From **`frontend/`**, run **`npm install`** then **`npm run dev`** (default **http://localhost:3000**).
+4. Add that origin to FastAPI **`CORS_ORIGINS`**. If the API uses **`CLERK_ONLY_AUTH`**, set **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** and **`CLERK_SECRET_KEY`** in **`.env.local`** and match **`CLERK_AUTHORIZED_PARTIES`** / Clerk dashboard URLs on the backend.
+
+Set **`STUDY_COACH_FRONTEND_URL`** (e.g. `http://127.0.0.1:3000`) on the API so **`GET /`**, **`/assessment`**, and **`/chat`** redirect to the Next app (`/` and `/assessment` as-is, **`/chat` → `/studio/chat`**). Without it, those routes return a short HTML stub pointing at **`frontend/`**.
+
+**Local dev (two terminals):** `make dev-api` and `make dev-web` (after `make install-web` and a configured **`.env`** / **`frontend/.env.local`**).
+
+**Studio UI:** **`/studio`** — dashboard and **`/studio/chat`** coach (Study Coach dark/gold styling). Protected by Clerk when **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** is set. Marketing images ship under **`frontend/public/images/landing/`**.
+
+**If the UI breaks** (buttons dead, console **404** on `/_next/static/chunks/main-app.js` or **`app-pages-internals.js`**): stop the dev server, run **`npm run clean`** in **`frontend/`**, then **`npm run dev`** again. That usually means **`frontend/.next`** mixed a **`next build`** output with **`next dev`** or a stale cache.
 
 ## Configuration
 
 | Variable | Purpose |
 |----------|---------|
+| `STUDY_COACH_FRONTEND_URL` | Next.js base URL for redirects from `/`, `/assessment`, legacy `/chat`, and post-gate flows. |
 | `OPENAI_API_KEY` | LLM calls (example provider). |
 | `REDIS_URL` | e.g. `redis://localhost:6379` for MCP event store. |
 | `SESSION_SECRET` | Signs session cookies (use a long random value when using `/gate`). |
@@ -124,7 +149,7 @@ Dependencies (conceptual — pin versions in your lockfile):
 
 3. MCP is typically mounted under the same app (e.g. `/agent`); the MCP HTTP URL must match what `MultiServerMCPClient` uses (e.g. `http://localhost:8000/agent/mcp`).
 
-4. Open the app: **landing** [http://localhost:8000/](http://localhost:8000/), **gate** [http://localhost:8000/gate](http://localhost:8000/gate) (when access code is set), **assessment** [http://localhost:8000/assessment](http://localhost:8000/assessment), **chat** [http://localhost:8000/chat](http://localhost:8000/chat) — Swagger at `/docs`, JSON routes at `/service`.
+4. Open the API: **landing** [http://localhost:8000/](http://localhost:8000/), **gate** [http://localhost:8000/gate](http://localhost:8000/gate) (when access code is set), **assessment** [http://localhost:8000/assessment](http://localhost:8000/assessment), legacy **chat** [http://localhost:8000/chat](http://localhost:8000/chat) — or use **Next.js** at [http://localhost:3000/studio](http://localhost:3000/studio); Swagger at `/docs`, JSON at `/service`.
 
 ## API usage
 

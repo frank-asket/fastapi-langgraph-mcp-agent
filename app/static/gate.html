@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Access — Ghana study coach</title>
+  <title>Access — Study Coach</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Figtree:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
@@ -20,19 +20,21 @@
       background: #3d7a5f; color: #f4faf7; font-family: Syne, sans-serif; font-weight: 700; cursor: pointer; }
     button:hover { filter: brightness(1.08); }
     .err { color: #e8a0a8; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+    .err.hint { color: #c4b88a; }
     a { color: #d4a84b; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>School access</h1>
-    <p>Enter the access code from your teacher or administrator. A session cookie is stored in this browser.</p>
+    <h1>Study Coach — sign in</h1>
+    <p>Enter the access code from your school or administrator. We set a signed session cookie in this browser so your chat and API calls are authorized.</p>
     <form method="post" action="/gate/session">
-      <input type="hidden" name="next" id="next" value="/chat" />
+      <input type="hidden" name="next" id="next" value="/studio/chat" />
       <label for="access_code">Access code</label>
       <input type="password" name="access_code" id="access_code" autocomplete="current-password" required />
       <button type="submit">Continue</button>
       <p class="err" id="e">Invalid code.</p>
+      <p class="err hint" id="e2">Browser gate is not enabled. Set APP_ACCESS_CODE on the server or use API key authentication.</p>
     </form>
     <p style="margin-top:1rem;margin-bottom:0;font-size:0.8rem"><a href="/">← Home</a></p>
   </div>
@@ -42,6 +44,7 @@
       var n = q.get("next");
       if (n && n.startsWith("/")) document.getElementById("next").value = n;
       if (q.get("e") === "1") document.getElementById("e").style.display = "block";
+      if (q.get("e") === "2") document.getElementById("e2").style.display = "block";
     })();
   </script>
 </body>

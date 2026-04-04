@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     #: When set, /workflow and /chat API require gate or X-App-Access-Code header.
     app_access_code: str | None = None
 
+    #: Comma-separated API keys; valid X-API-Key or Authorization: Bearer <key> satisfies auth when enabled.
+    api_keys: str = Field(default="")
+
     #: If True and auth enabled, learning IDs are bound to the browser session (blocks cross-device resume).
     bind_threads_to_session: bool = Field(default=True)
 
@@ -41,15 +44,113 @@ class Settings(BaseSettings):
     #: Per-session-or-IP cap on workflow + stream endpoints.
     workflow_requests_per_minute: int = Field(default=40, ge=5, le=300)
 
+    #: POST /gate/session attempts per client IP (limits brute-force against the access code).
+    gate_posts_per_minute: int = Field(default=25, ge=5, le=120)
+
+    #: Optional default cap for routes that declare no limit. 0 = disabled (recommended: use per-route limits).
+    global_requests_per_minute: int = Field(default=0, ge=0, le=5000)
+
+    #: Optional shared backend for slowapi (e.g. redis://localhost:6379/1). Omit for in-process memory.
+    rate_limit_storage_uri: str | None = None
+
+    #: Write X-RateLimit-* response headers when limits apply.
+    rate_limit_headers_enabled: bool = Field(default=True)
+
+    #: Comma-separated allowed browser origins for CORS (e.g. https://app.example.com).
+    #: Default includes local Next.js dev (localhost + 127.0.0.1 on port 3000). Set explicitly in production.
+    #: Use an empty value in .env only if you want no CORS middleware (same-origin / server-side calls only).
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000",
+    )
+
+    #: Allow cookies (SessionMiddleware) in cross-origin requests. Requires explicit origins (not *).
+    cors_allow_credentials: bool = Field(default=True)
+
+    #: Comma-separated methods for CORS preflight (default covers typical API + SSE).
+    cors_allow_methods: str = Field(default="GET,POST,PUT,PATCH,DELETE,OPTIONS")
+
+    #: * or comma-separated request header names the browser may send.
+    cors_allow_headers: str = Field(default="*")
+
+    #: Comma-separated response header names the browser JS may read (e.g. X-RateLimit-Remaining).
+    cors_expose_headers: str = Field(
+        default="X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,Retry-After",
+    )
+
     #: Multipart /workflow/upload — max file size (bytes).
     max_upload_bytes: int = Field(default=8 * 1024 * 1024, ge=1024, le=52_428_800)
 
     #: Max characters kept from extracted document text (then sent to the model).
     max_attachment_extract_chars: int = Field(default=80_000, ge=2_000, le=500_000)
 
+    # --- Clerk (optional): session JWT + webhooks + subscription enforcement ---
+    #: Clerk Frontend API URL (JWT "iss"), e.g. https://your-instance.clerk.accounts.dev
+    clerk_jwt_issuer: str | None = None
+    #: Override JWKS URL (default: {issuer}/.well-known/jwks.json). See Clerk manual JWT docs.
+    clerk_jwks_url: str | None = None
+    #: If set, JWT audience is verified; otherwise aud check is skipped.
+    clerk_jwt_audience: str | None = None
+    #: Comma-separated origins allowed in the session token `azp` claim (recommended for CSRF safety).
+    clerk_authorized_parties: str = Field(default="")
+    #: Reject tokens with sts=pending when using Clerk Organizations without personal accounts.
+    clerk_reject_org_pending_status: bool = Field(default=False)
+    #: Svix signing secret from Clerk dashboard (starts with whsec_) for POST /webhooks/clerk.
+    clerk_webhook_secret: str | None = None
+    #: SQLite backing store updated from Clerk webhooks (user.updated, etc.).
+    clerk_entitlements_db_path: str = Field(default="data/clerk_entitlements.db")
+    #: If True, workflow routes require subscription for Clerk users (see JWT claim and/or DB below).
+    clerk_enforce_subscription: bool = Field(default=False)
+    #: JWT claim name (add via Clerk session token template), e.g. subscription_status mapped from metadata.
+    clerk_subscription_jwt_claim: str = Field(default="")
+    #: Comma-separated values treated as "active" for subscription checks.
+    clerk_subscription_active_values: str = Field(default="active,trialing")
+    #: If True, subscription must also match a row in clerk_entitlements (populated by webhooks).
+    clerk_enforce_entitlements_db: bool = Field(default=False)
+    #: Browser publishable key (pk_…) for embedded Clerk on the Next.js app.
+    clerk_publishable_key: str | None = None
+
+    #: Next.js UI base URL (no trailing slash). When set, GET /, /assessment, /chat redirect here;
+    #: POST /gate/session redirects successful logins to this host (e.g. http://127.0.0.1:3000).
+    study_coach_frontend_url: str | None = None
+    #: If True, only Clerk session JWTs authorize workflow routes (no API keys, access code, or gate session).
+    clerk_only_auth: bool = Field(default=False)
+
+    @property
+    def api_key_list(self) -> tuple[str, ...]:
+        raw = (self.api_keys or "").strip()
+        if not raw:
+            return ()
+        return tuple(x.strip() for x in raw.split(",") if x.strip())
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        raw = (self.cors_origins or "").strip()
+        if not raw:
+            return []
+        return [x.strip() for x in raw.split(",") if x.strip()]
+
+    @property
+    def clerk_jwt_configured(self) -> bool:
+        return bool((self.clerk_jwks_url or "").strip() or (self.clerk_jwt_issuer or "").strip())
+
+    @property
+    def clerk_authorized_parties_set(self) -> set[str]:
+        return {x.strip() for x in self.clerk_authorized_parties.split(",") if x.strip()}
+
     @property
     def auth_enabled(self) -> bool:
+        if self.clerk_only_auth:
+            return self.clerk_jwt_configured
+        if self.clerk_jwt_configured:
+            return True
+        if self.api_key_list:
+            return True
         return bool(self.app_access_code and str(self.app_access_code).strip())
+
+    @property
+    def study_coach_frontend_base(self) -> str | None:
+        raw = (self.study_coach_frontend_url or "").strip()
+        return raw.rstrip("/") if raw else None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
