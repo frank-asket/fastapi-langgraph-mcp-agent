@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth, useUser } from "@clerk/nextjs";
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { syncTimetableGoalsFromAssessment } from "@/lib/timetableGoalsSync";
 import {
   emitTimetableChanged,
@@ -100,16 +100,7 @@ function StudioTimetableWorkspaceInner({
     <div className="overflow-y-auto px-4 py-8 lg:px-10">
       <div className="mx-auto max-w-3xl">
         <div className="flex flex-wrap items-start gap-4">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-sc-line bg-[#0f172a]">
-            <Image
-              src="/images/landing/kifinal.png"
-              alt="Klingbo"
-              width={64}
-              height={64}
-              className="object-cover"
-              priority
-            />
-          </div>
+          <AppLogo className="bg-sc-bg" size={64} priority />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-sc-gold">Schedule intelligence</p>
             <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white">Timetable & nudges</h1>

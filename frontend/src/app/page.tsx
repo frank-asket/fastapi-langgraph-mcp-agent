@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { PoweredByInfrastructure } from "@/components/marketing/PoweredByInfrastructure";
 import { SiteNav } from "@/components/marketing/SiteNav";
 import { getApiUrl } from "@/lib/api";
@@ -18,9 +19,15 @@ export default function HomePage() {
       />
       <div className="relative mx-auto max-w-[980px] px-5 py-10 pb-16">
       <header className="mb-14 flex flex-wrap items-start justify-between gap-4">
-        <div className="font-[family-name:var(--font-syne)] text-lg font-extrabold tracking-tight text-white">
-          Study <span className="text-sc-gold">Coach</span>
-        </div>
+        <Link
+          href="/"
+          className="flex items-center gap-3 transition opacity-90 hover:opacity-100"
+        >
+          <AppLogo size={44} priority />
+          <div className="font-[family-name:var(--font-syne)] text-lg font-extrabold tracking-tight text-white">
+            Study <span className="text-sc-gold">Coach</span>
+          </div>
+        </Link>
         <SiteNav />
       </header>
 

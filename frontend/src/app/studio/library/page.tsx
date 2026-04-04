@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { AppLogo } from "@/components/brand/AppLogo";
 import type { LearnerProfile } from "@/hooks/useWorkflowChat";
 import {
   LEARNER_PROFILE_STORAGE_KEY,
@@ -28,7 +29,10 @@ export default function StudioLibraryPage() {
   return (
     <div className="overflow-y-auto px-4 py-8 lg:px-10">
       <div className="mx-auto max-w-3xl">
-        <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white">Prompt library</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <AppLogo size={48} />
+          <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white">Prompt library</h1>
+        </div>
         <p className="mt-2 text-[#9caaa0]">
           Starters open <strong className="text-sc-mist">Coach</strong> with a filled prompt (same{" "}
           <code className="text-sc-gold">/workflow</code> API).{" "}

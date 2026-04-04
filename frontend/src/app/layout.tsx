@@ -18,6 +18,10 @@ export const metadata: Metadata = {
   title: "Study Coach — AI tutoring for African education",
   description:
     "Vertical AI platform for African education — personalized tutoring, document intelligence, and study coaching.",
+  icons: {
+    icon: "/images/landing/kifinal.png",
+    apple: "/images/landing/kifinal.png",
+  },
 };
 
 export default function RootLayout({

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { TimetableNotificationsBell } from "@/components/studio/TimetableNotificationsBell";
 
 const nav = [
@@ -26,8 +27,8 @@ export function StudioSidebar() {
     <aside className="flex w-56 shrink-0 flex-col border-r border-sc-line bg-sc-elev shadow-[4px_0_24px_rgba(0,0,0,0.2)] lg:w-64">
       <div className="border-b border-sc-line px-4 py-5">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/studio" className="flex min-w-0 flex-1 items-center gap-2 font-[family-name:var(--font-syne)] font-bold tracking-tight text-white">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sc-line bg-sc-bg text-lg">📖</span>
+          <Link href="/studio" className="flex min-w-0 flex-1 items-center gap-2.5 font-[family-name:var(--font-syne)] font-bold tracking-tight text-white">
+            <AppLogo size={36} />
             <span className="min-w-0 truncate text-[1.05rem] leading-tight">
               Study <span className="text-sc-gold">Coach</span>
             </span>

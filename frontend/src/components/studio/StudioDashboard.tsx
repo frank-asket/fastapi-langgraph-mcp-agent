@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { AppLogo } from "@/components/brand/AppLogo";
 import type { LearnerProfile } from "@/hooks/useWorkflowChat";
 import {
   LEARNER_PROFILE_STORAGE_KEY,
@@ -28,9 +29,12 @@ export function StudioDashboard() {
   return (
     <div className="overflow-y-auto px-4 py-8 lg:px-10">
       <div className="mx-auto max-w-4xl">
-        <h1 className="font-[family-name:var(--font-syne)] text-3xl font-extrabold tracking-tight text-white">
-          Welcome to Study Coach
-        </h1>
+        <div className="flex flex-wrap items-center gap-4">
+          <AppLogo size={56} />
+          <h1 className="font-[family-name:var(--font-syne)] text-3xl font-extrabold tracking-tight text-white">
+            Welcome to Study Coach
+          </h1>
+        </div>
         <p className="mt-2 max-w-2xl text-lg text-[#9caaa0]">
           Your workspace for coaching, prompts, and notes—same engine as the marketing site, styled to match. Open{" "}
           <Link className="font-semibold text-sc-gold underline hover:text-sc-mist" href="/studio/chat">

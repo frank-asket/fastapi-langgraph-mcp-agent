@@ -149,9 +149,9 @@ def generate_timetable_nudge(
             f"{slot_for_event['start_time']}–{slot_for_event['end_time']}"
         )
         moment = (
-            f"NOTIFICATION TYPE: REST after class.\n"
+            f"NOTIFICATION TYPE: REST right as class ends.\n"
             f"Learner timezone: {timezone_label}. Today: {today_iso}.\n"
-            f"Suggest recovery that fits ~{rest_after_minutes} minutes before their next commitment if relevant.\n"
+            f"Suggest a break of about {rest_after_minutes} minutes (duration), then returning refreshed for what comes next.\n"
             f"{ev}\n"
         )
     else:

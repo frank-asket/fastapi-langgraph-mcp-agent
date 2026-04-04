@@ -2,6 +2,7 @@
 
 import { SignedIn, SignOutButton } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { useWorkflowChat, type GetTokenFn } from "@/hooks/useWorkflowChat";
 import { AssistantMessageContent } from "./AssistantMessageContent";
 import { StudioCoachCalendar } from "./StudioCoachCalendar";
@@ -15,14 +16,6 @@ type Props = {
 
 const hasClerkPk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const NEAR_BOTTOM_PX = 96;
-
-function IconSpark() {
-  return (
-    <svg className="h-5 w-5 shrink-0 text-sc-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z" />
-    </svg>
-  );
-}
 
 function IconUserBadge() {
   return (
@@ -177,9 +170,9 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
     <div className="flex min-h-0 min-w-0 flex-1 items-stretch">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-sc-bg">
         <div className="flex items-center justify-between border-b border-sc-line bg-sc-elev px-4 py-3 transition-shadow duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-          <div className="flex items-start gap-2">
-            <span className="sc-fade-up mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-sc-line bg-sc-bg">
-              <IconSpark />
+          <div className="flex items-start gap-3">
+            <span className="sc-fade-up mt-0.5">
+              <AppLogo size={36} />
             </span>
             <div>
               <h1 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Coach</h1>
