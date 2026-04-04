@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { TimetableNotificationsBell } from "@/components/studio/TimetableNotificationsBell";
 
 const nav = [
   { href: "/studio", label: "Dashboard", icon: "◆" },
   { href: "/studio/chat", label: "Coach", icon: "💬" },
+  { href: "/studio/timetable", label: "Timetable", icon: "🗓️" },
 ];
 
 const promptKids = [
@@ -23,12 +25,15 @@ export function StudioSidebar() {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-sc-line bg-sc-elev shadow-[4px_0_24px_rgba(0,0,0,0.2)] lg:w-64">
       <div className="border-b border-sc-line px-4 py-5">
-        <Link href="/studio" className="flex items-center gap-2 font-[family-name:var(--font-syne)] font-bold tracking-tight text-white">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-sc-line bg-sc-bg text-lg">📖</span>
-          <span className="text-[1.05rem] leading-tight">
-            Study <span className="text-sc-gold">Coach</span>
-          </span>
-        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/studio" className="flex min-w-0 flex-1 items-center gap-2 font-[family-name:var(--font-syne)] font-bold tracking-tight text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sc-line bg-sc-bg text-lg">📖</span>
+            <span className="min-w-0 truncate text-[1.05rem] leading-tight">
+              Study <span className="text-sc-gold">Coach</span>
+            </span>
+          </Link>
+          <TimetableNotificationsBell />
+        </div>
         <p className="mt-1 text-xs text-[#8c9a90]">Workspace</p>
       </div>
 

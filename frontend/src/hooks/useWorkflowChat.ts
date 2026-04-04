@@ -50,7 +50,8 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function useWorkflowChat(getToken?: GetTokenFn) {
+/** When using Clerk, pass `false` until `useAuth()` reports `isLoaded && isSignedIn` to avoid requests without a session JWT. */
+export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boolean) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -63,13 +64,14 @@ export function useWorkflowChat(getToken?: GetTokenFn) {
 
   const authHeaders = useCallback(async () => {
     if (!getToken) return {} as Record<string, string>;
+    if (clerkSessionReady === false) return {} as Record<string, string>;
     try {
       const t = await getToken();
       return t ? { Authorization: `Bearer ${t}` } : {};
     } catch {
       return {};
     }
-  }, [getToken]);
+  }, [getToken, clerkSessionReady]);
 
   const readProfile = useCallback((): LearnerProfile | null => {
     try {
@@ -166,6 +168,7 @@ export function useWorkflowChat(getToken?: GetTokenFn) {
   );
 
   const loadHistory = useCallback(async () => {
+    if (getToken != null && clerkSessionReady === false) return;
     let tid: string | null = threadId;
     if (!tid) {
       try {
@@ -176,11 +179,11 @@ export function useWorkflowChat(getToken?: GetTokenFn) {
     }
     if (!tid) return;
     await fetchHistoryForThread(tid);
-  }, [threadId, fetchHistoryForThread]);
+  }, [threadId, fetchHistoryForThread, getToken, clerkSessionReady]);
 
   useEffect(() => {
     void loadHistory();
-  }, [loadHistory, getToken]);
+  }, [loadHistory, getToken, clerkSessionReady]);
 
   const appendMessage = useCallback((role: "user" | "assistant", content: string, isError?: boolean) => {
     setMessages((prev) => [...prev, { role, content, isError }]);

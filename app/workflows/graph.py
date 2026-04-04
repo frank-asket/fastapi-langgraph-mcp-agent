@@ -16,11 +16,12 @@ from langgraph.prebuilt import create_react_agent
 
 from app.agent_lanes import DEFAULT_AGENT_LANE, MCP_PROMPT_BY_LANE, VALID_AGENT_LANES
 from app.config import Settings
+from app.trust_safety import augment_system_prompt
 
 logger = logging.getLogger(__name__)
 
-# Bump when MCP tool names or graph wiring change so workers rebuild the compiled graph.
-MCP_TOOLSET_VERSION = 6
+# Bump when MCP tool names, trust-safety prompt, or graph wiring change so workers rebuild the compiled graph.
+MCP_TOOLSET_VERSION = 7
 
 _graphs: dict[str, CompiledStateGraph] = {}
 _graph_cache_version: int | None = None
@@ -139,7 +140,10 @@ async def get_workflow_graph(
         )
         tools = await client.get_tools()
         prompt_msgs = await client.get_prompt("agent", prompt_name)
-        system_prompt = _mcp_prompt_to_system_string(prompt_msgs)
+        system_prompt = augment_system_prompt(
+            _mcp_prompt_to_system_string(prompt_msgs),
+            settings,
+        )
 
         model_kw: dict[str, Any] = {
             "model": settings.openai_model,

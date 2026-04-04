@@ -1,5 +1,6 @@
-"""Application lifespan: LangGraph SQLite checkpointer."""
+"""Application lifespan: LangGraph SQLite checkpointer + timetable notification ticker."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -10,6 +11,19 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _timetable_tick_loop() -> None:
+    from app.timetable_scheduler import process_timetable_notifications
+
+    while True:
+        try:
+            await asyncio.to_thread(process_timetable_notifications)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Timetable notification tick failed")
+        await asyncio.sleep(60)
 
 
 @asynccontextmanager
@@ -32,4 +46,16 @@ async def core_lifespan(app: FastAPI):
     async with AsyncSqliteSaver.from_conn_string(conn_str) as saver:
         app.state.checkpointer = saver
         logger.info("LangGraph thread memory (SQLite): %s", conn_str)
-        yield
+        tick_task: asyncio.Task | None = None
+        if settings.timetable_notifications_enabled:
+            tick_task = asyncio.create_task(_timetable_tick_loop())
+            logger.info("Timetable notification scheduler (60s tick): enabled")
+        try:
+            yield
+        finally:
+            if tick_task:
+                tick_task.cancel()
+                try:
+                    await tick_task
+                except asyncio.CancelledError:
+                    pass

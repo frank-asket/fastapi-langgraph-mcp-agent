@@ -83,6 +83,16 @@ class Settings(BaseSettings):
     #: Max characters kept from extracted document text (then sent to the model).
     max_attachment_extract_chars: int = Field(default=80_000, ge=2_000, le=500_000)
 
+    # --- Trust & safety (truthfulness guardrails; not a substitute for fact-checking APIs) ---
+    #: Append strong anti-hallucination instructions after the MCP coach system prompt.
+    trust_safety_system_enforcement: bool = Field(default=True)
+    #: Append a short verification reminder to each /workflow assistant reply (and stream).
+    trust_safety_reply_footer: bool = Field(default=True)
+    #: Override footer markdown/plain text; empty uses built-in English disclaimer.
+    trust_safety_reply_footer_text: str | None = None
+    #: If True, log INFO when replies match heuristic patterns (fees/cut-offs)—audit only, no blocking.
+    trust_safety_log_risk_signals: bool = Field(default=False)
+
     # --- Clerk (optional): session JWT + webhooks + subscription enforcement ---
     #: Clerk Frontend API URL (JWT "iss"), e.g. https://your-instance.clerk.accounts.dev
     clerk_jwt_issuer: str | None = None
@@ -108,6 +118,23 @@ class Settings(BaseSettings):
     clerk_enforce_entitlements_db: bool = Field(default=False)
     #: Browser publishable key (pk_…) for embedded Clerk on the Next.js app.
     clerk_publishable_key: str | None = None
+
+    #: Timetable + nudges (SQLite). Notifications run in-process (minute ticker).
+    timetable_db_path: str = Field(default="data/timetable.db")
+    timetable_notifications_enabled: bool = Field(default=True)
+
+    #: SendGrid for timetable / coach nudges (optional; in-app still works without).
+    sendgrid_api_key: str | None = None
+    sendgrid_from_email: str = Field(default="noreply@klingbo.com")
+    sendgrid_from_name: str = Field(default="Klingbo Study Coach")
+    #: Override default repo path for email inline logo (PNG).
+    timetable_brand_logo_path: str | None = None
+    #: Internal reference PNG for timetable import only (not shown in UI); helps the model align to a week grid.
+    timetable_reference_layout_path: str | None = None
+    #: When True and OPENAI_API_KEY is set, prep/rest/daily-focus nudges use the model to analyse the saved timetable.
+    timetable_notify_ai_enabled: bool = Field(default=True)
+    #: Optional model override for timetable nudges (defaults to OPENAI_MODEL).
+    timetable_notify_ai_model: str | None = None
 
     #: Next.js UI base URL (no trailing slash). When set, GET /, /assessment, /chat redirect here;
     #: POST /gate/session redirects successful logins to this host (e.g. http://127.0.0.1:3000).

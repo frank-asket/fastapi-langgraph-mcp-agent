@@ -1,6 +1,7 @@
 """POST/GET workflow API (chat agent, uploads, history, SSE)."""
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from starlette.responses import Response
 
 from app.limiting import dynamic_workflow_limit, limiter
 from app.schemas import HistoryResponse, WorkflowRequest, WorkflowResponse
@@ -16,13 +17,17 @@ router = APIRouter()
 
 @router.get("/workflow/history", response_model=HistoryResponse)
 @limiter.limit(dynamic_workflow_limit)
-async def workflow_history(request: Request, thread_id: str) -> HistoryResponse:
+async def workflow_history(
+    request: Request, response: Response, thread_id: str
+) -> HistoryResponse:
     return await workflow_history_result(request, thread_id)
 
 
 @router.post("/workflow", response_model=WorkflowResponse)
 @limiter.limit(dynamic_workflow_limit)
-async def workflow(request: Request, body: WorkflowRequest) -> WorkflowResponse:
+async def workflow(
+    request: Request, response: Response, body: WorkflowRequest
+) -> WorkflowResponse:
     return await execute_workflow(request, body)
 
 
@@ -30,6 +35,7 @@ async def workflow(request: Request, body: WorkflowRequest) -> WorkflowResponse:
 @limiter.limit(dynamic_workflow_limit)
 async def workflow_upload(
     request: Request,
+    response: Response,
     file: UploadFile = File(..., description="Document: txt, pdf, docx, rtf, odt, html, csv, md, …"),
     message: str = Form(""),
     thread_id: str | None = Form(None),
@@ -51,5 +57,7 @@ async def workflow_upload(
 
 @router.post("/workflow/stream")
 @limiter.limit(dynamic_workflow_limit)
-async def workflow_stream(request: Request, body: WorkflowRequest):
+async def workflow_stream(
+    request: Request, response: Response, body: WorkflowRequest
+):
     return await workflow_stream_response(request, body)

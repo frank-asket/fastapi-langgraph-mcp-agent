@@ -1,24 +1,30 @@
 "use client";
 
 import Link from "next/link";
-
-const starters = [
-  {
-    title: "Explore your topic",
-    prompt:
-      "I'm studying for school in Ghana. Suggest three ways to break down today's topic and one practice question for each.",
-  },
-  {
-    title: "Ask the better way",
-    prompt: "What is a simple revision plan I can use this week for core subjects, with 30-minute blocks?",
-  },
-  {
-    title: "Make it simple",
-    prompt: "Explain the difference between memorizing and understanding, with a small example from math or science.",
-  },
-];
+import { useEffect, useMemo, useState } from "react";
+import type { LearnerProfile } from "@/hooks/useWorkflowChat";
+import {
+  LEARNER_PROFILE_STORAGE_KEY,
+  personalizedDashboardStarters,
+  readStoredLearnerProfile,
+} from "@/lib/promptLibraryFromProfile";
 
 export function StudioDashboard() {
+  const [profile, setProfile] = useState<LearnerProfile | null>(null);
+
+  useEffect(() => {
+    setProfile(readStoredLearnerProfile());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LEARNER_PROFILE_STORAGE_KEY || e.key === null) {
+        setProfile(readStoredLearnerProfile());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const starters = useMemo(() => personalizedDashboardStarters(profile), [profile]);
+
   return (
     <div className="overflow-y-auto px-4 py-8 lg:px-10">
       <div className="mx-auto max-w-4xl">
@@ -34,18 +40,34 @@ export function StudioDashboard() {
         </p>
 
         <p className="mt-8 text-center text-sm font-medium text-[#8c9a90]">
-          Not sure where to start? Try the{" "}
-          <Link href="/studio/library" className="text-sc-gold underline hover:text-sc-mist">
-            prompt library
-          </Link>{" "}
-          or the{" "}
-          <Link href="/assessment" className="text-sc-gold underline hover:text-sc-mist">
-            assessment
-          </Link>
-          .
+          {profile?.education_level ? (
+            <>
+              Starters below use your assessment (level, subject focus, goals). Refresh them anytime via the{" "}
+              <Link href="/assessment" className="text-sc-gold underline hover:text-sc-mist">
+                assessment
+              </Link>{" "}
+              or browse the full{" "}
+              <Link href="/studio/library" className="text-sc-gold underline hover:text-sc-mist">
+                prompt library
+              </Link>
+              .
+            </>
+          ) : (
+            <>
+              Not sure where to start? Complete the{" "}
+              <Link href="/assessment" className="text-sc-gold underline hover:text-sc-mist">
+                assessment
+              </Link>{" "}
+              for tailored prompts, try the{" "}
+              <Link href="/studio/library" className="text-sc-gold underline hover:text-sc-mist">
+                prompt library
+              </Link>
+              , or use the generic starters below.
+            </>
+          )}
         </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
           {starters.map((s) => (
             <Link
               key={s.title}

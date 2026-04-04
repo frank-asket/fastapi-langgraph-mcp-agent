@@ -80,7 +80,7 @@ fastapi-langgraph-mcp-agent/
 
 ## Next.js frontend (optional)
 
-The **`frontend/`** directory is a **Next.js 15** app (App Router): landing page, multi-step **assessment**, and **`/studio`** workspace (dashboard + coach + scratch pad) that calls the same **`POST /workflow`**, **`POST /workflow/upload`**, and **`GET /workflow/history`** endpoints as the API.
+The **`frontend/`** directory is a **Next.js 15** app (App Router): landing page, multi-step **assessment**, and **`/studio`** workspace (dashboard + coach) that calls the same **`POST /workflow`**, **`POST /workflow/upload`**, and **`GET /workflow/history`** endpoints as the API.
 
 1. Run the API (e.g. on **http://127.0.0.1:8000**).
 2. Copy **`frontend/.env.local.example`** to **`frontend/.env.local`** and set **`NEXT_PUBLIC_API_URL`**.
@@ -91,7 +91,7 @@ Set **`STUDY_COACH_FRONTEND_URL`** (e.g. `http://127.0.0.1:3000`) on the API so 
 
 **Local dev (two terminals):** `make dev-api` and `make dev-web` (after `make install-web` and a configured **`.env`** / **`frontend/.env.local`**).
 
-**Studio UI:** **`/studio`** — dashboard and **`/studio/chat`** coach (Study Coach dark/gold styling). Protected by Clerk when **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** is set. Marketing images ship under **`frontend/public/images/landing/`**.
+**Studio UI:** **`/studio`** — dashboard with personalised starters, **`/studio/chat`** coach, **`/studio/timetable`** (**import** PDF / DOCX / images via **`POST /timetable/import`** with **`OPENAI_API_KEY`**; internal reference grid PNG aligns parsing; schedule shows in a **week calendar** beside **`/studio/chat`** only; **goals** for nudges sync from the **assessment** profile; prep/rest/focus nudges + optional **SendGrid**), **`/studio/library`** prompts (Study Coach dark/gold styling). Protected by Clerk when **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** is set. Brand logo for emails: **`frontend/public/images/landing/kifinal.png`** (inline in HTML). Marketing images ship under **`frontend/public/images/landing/`**.
 
 **If the UI breaks** (buttons dead, console **404** on `/_next/static/chunks/main-app.js` or **`app-pages-internals.js`**): stop the dev server, run **`npm run clean`** in **`frontend/`**, then **`npm run dev`** again. That usually means **`frontend/.next`** mixed a **`next build`** output with **`next dev`** or a stale cache.
 
@@ -171,7 +171,7 @@ curl -s -X POST "http://localhost:8000/workflow" \
   -d '{"message": "I need a two-week revision plan.", "learner_profile": {"education_level": "shs", "shs_track": "science", "subject_focus": "Mathematics", "region": "Greater Accra", "goals": "WASSCE Core Math"}}'
 ```
 
-**Streaming** (`text/event-stream`): same JSON body as `POST /workflow` on **`POST /workflow/stream`**. Events: `token` (partial assistant text), `done` (full reply + `thread_id`), `error`.
+**Streaming** (`text/event-stream`): same JSON body as `POST /workflow` on **`POST /workflow/stream`**. Events: `token` (partial assistant text), optional trailing `token`(s) for the verification footer, `done` (`thread_id`, `agent_lane`, **`reply`** = full text including footer), `error`.
 
 ## MCP tools (examples)
 

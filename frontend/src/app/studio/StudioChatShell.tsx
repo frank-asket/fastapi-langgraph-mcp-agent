@@ -7,9 +7,20 @@ import { StudioChatWorkspace } from "@/components/studio/StudioChatWorkspace";
 import type { GetTokenFn } from "@/hooks/useWorkflowChat";
 
 function StudioWithClerk({ initialPrompt }: { initialPrompt: string | null }) {
-  const { getToken } = useAuth();
-  const getTokenSafe: GetTokenFn = () => getToken();
-  return <StudioChatWorkspace getToken={getTokenSafe} initialPrompt={initialPrompt} />;
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const clerkSessionReady = isLoaded && isSignedIn;
+  const getTokenSafe: GetTokenFn = () => {
+    const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE?.trim();
+    if (template) return getToken({ template });
+    return getToken();
+  };
+  return (
+    <StudioChatWorkspace
+      getToken={getTokenSafe}
+      clerkSessionReady={clerkSessionReady}
+      initialPrompt={initialPrompt}
+    />
+  );
 }
 
 function StudioChatInner() {
@@ -25,10 +36,14 @@ function StudioChatInner() {
 
 export function StudioChatShell() {
   return (
-    <Suspense
-      fallback={<div className="flex flex-1 items-center justify-center text-slate-500">Loading…</div>}
-    >
-      <StudioChatInner />
-    </Suspense>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <Suspense
+        fallback={
+          <div className="flex min-h-0 flex-1 items-center justify-center text-slate-500">Loading…</div>
+        }
+      >
+        <StudioChatInner />
+      </Suspense>
+    </div>
   );
 }

@@ -1,19 +1,150 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { SignedIn, SignOutButton } from "@clerk/nextjs";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWorkflowChat, type GetTokenFn } from "@/hooks/useWorkflowChat";
-import { StudioEditorPanel } from "./StudioEditorPanel";
+import { AssistantMessageContent } from "./AssistantMessageContent";
+import { StudioCoachCalendar } from "./StudioCoachCalendar";
 
-type Props = { getToken?: GetTokenFn; initialPrompt?: string | null };
+type Props = {
+  getToken?: GetTokenFn;
+  /** false until Clerk `isLoaded && isSignedIn` when using session JWT auth */
+  clerkSessionReady?: boolean;
+  initialPrompt?: string | null;
+};
 
-export function StudioChatWorkspace({ getToken, initialPrompt }: Props) {
+const hasClerkPk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const NEAR_BOTTOM_PX = 96;
+
+function IconSpark() {
+  return (
+    <svg className="h-5 w-5 shrink-0 text-sc-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z" />
+    </svg>
+  );
+}
+
+function IconUserBadge() {
+  return (
+    <svg className="h-3.5 w-3.5 opacity-90" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+    </svg>
+  );
+}
+
+function IconCoachBadge() {
+  return (
+    <svg className="h-3.5 w-3.5 opacity-90" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
+    </svg>
+  );
+}
+
+function IconAlert() {
+  return (
+    <svg className="h-3.5 w-3.5 opacity-90" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+    </svg>
+  );
+}
+
+function IconAttach() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+      />
+    </svg>
+  );
+}
+
+function IconSend() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+    </svg>
+  );
+}
+
+function IconChatNew() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+    </svg>
+  );
+}
+
+function IconCopy() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+    </svg>
+  );
+}
+
+function IconLogout() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+    </svg>
+  );
+}
+
+function IconChevronUp() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z" />
+    </svg>
+  );
+}
+
+function IconChevronDown() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z" />
+    </svg>
+  );
+}
+
+export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt }: Props) {
   const logRef = useRef<HTMLDivElement>(null);
-  const [editorContent, setEditorContent] = useState("");
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const pinnedToBottomRef = useRef(true);
+  const [showJumpLatest, setShowJumpLatest] = useState(false);
+  const [showJumpTop, setShowJumpTop] = useState(false);
   const starterSent = useRef(false);
 
-  const chat = useWorkflowChat(getToken);
+  const chat = useWorkflowChat(getToken, clerkSessionReady);
 
   const { sendText } = chat;
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = logRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+    pinnedToBottomRef.current = true;
+    setShowJumpLatest(false);
+  }, []);
+
+  const scrollToTop = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = logRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior });
+    pinnedToBottomRef.current = false;
+    setShowJumpTop(false);
+  }, []);
+
+  const onLogScroll = useCallback(() => {
+    const el = logRef.current;
+    if (!el) return;
+    const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    pinnedToBottomRef.current = fromBottom < NEAR_BOTTOM_PX;
+    setShowJumpLatest(fromBottom > 140);
+    setShowJumpTop(el.scrollTop > 200);
+  }, []);
+
   useEffect(() => {
     const p = initialPrompt?.trim();
     if (!p) return;
@@ -29,94 +160,182 @@ export function StudioChatWorkspace({ getToken, initialPrompt }: Props) {
   }, [initialPrompt, sendText]);
 
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
-  }, [chat.messages, chat.sending]);
+    if (!pinnedToBottomRef.current) return;
+    const id = requestAnimationFrame(() => {
+      scrollToBottom(chat.messages.length <= 1 ? "auto" : "smooth");
+    });
+    return () => cancelAnimationFrame(id);
+  }, [chat.messages, chat.sending, scrollToBottom]);
 
-  const lastAssistant =
-    [...chat.messages].reverse().find((m) => m.role === "assistant" && !m.isError)?.content ?? null;
-
-  const appendFromAssistant = (text: string) => {
-    setEditorContent((prev) => (prev ? `${prev.trim()}\n\n${text}` : text));
-  };
+  useEffect(() => {
+    const el = logRef.current;
+    if (!el) return;
+    onLogScroll();
+  }, [chat.messages.length, onLogScroll]);
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="flex min-h-0 min-w-0 flex-1 items-stretch">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-sc-bg">
-        <div className="flex items-center justify-between border-b border-sc-line bg-sc-elev px-4 py-3">
-          <div>
-            <h1 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Coach</h1>
-            <p className="text-xs text-[#8c9a90]">
-              Thread: {chat.threadId ? `${chat.threadId.slice(0, 8)}…` : "new after first message"}
-            </p>
+        <div className="flex items-center justify-between border-b border-sc-line bg-sc-elev px-4 py-3 transition-shadow duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+          <div className="flex items-start gap-2">
+            <span className="sc-fade-up mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-sc-line bg-sc-bg">
+              <IconSpark />
+            </span>
+            <div>
+              <h1 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Coach</h1>
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8c9a90]">
+                <svg className="h-3 w-3 text-sc-gold/60" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                </svg>
+                Thread: {chat.threadId ? `${chat.threadId.slice(0, 8)}…` : "new after first message"}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={chat.newChat}
-              className="rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold"
+              className="flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist transition hover:border-sc-gold hover:text-sc-gold active:scale-[0.98]"
             >
+              <IconChatNew />
               New chat
             </button>
             <button
               type="button"
               onClick={() => void chat.copyThreadId()}
-              className="rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist hover:border-sc-gold"
+              className="flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist transition hover:border-sc-gold hover:text-sc-gold active:scale-[0.98]"
             >
+              <IconCopy />
               Copy ID
             </button>
+            {hasClerkPk && (
+              <SignedIn>
+                <SignOutButton signOutOptions={{ redirectUrl: "/" }}>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg px-3 py-1.5 text-xs font-semibold text-sc-mist transition hover:border-red-400/60 hover:text-red-200 active:scale-[0.98]"
+                  >
+                    <IconLogout />
+                    Log out
+                  </button>
+                </SignOutButton>
+              </SignedIn>
+            )}
           </div>
         </div>
 
         {chat.profileBanner.show && (
           <div
-            className="mx-4 mt-3 rounded-xl border border-sc-line bg-sc-elev p-3 text-sm"
+            className="sc-animate-message mx-4 mt-3 rounded-xl border border-sc-line bg-sc-elev p-3 text-sm shadow-[0_8px_28px_rgba(0,0,0,0.18)]"
             dangerouslySetInnerHTML={{ __html: chat.profileBanner.html }}
           />
         )}
 
-        <div ref={logRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          {chat.messages.length === 0 && !chat.sending && (
-            <p className="text-center text-sm text-[#8c9a90]">
-              Ask anything below, or use starter cards on the dashboard.
-            </p>
-          )}
-          {chat.messages.map((m, i) => (
-            <div
-              key={i}
-              className={
-                m.role === "user"
-                  ? "ml-4 rounded-2xl rounded-br-md bg-gradient-to-br from-sc-leaf to-[#2d5f49] px-4 py-3 text-[#f4faf7] shadow-[0_12px_40px_rgba(61,122,95,0.25)] sm:ml-12"
-                  : `mr-4 rounded-2xl rounded-bl-md border border-sc-line bg-sc-elev px-4 py-3 text-sc-mist shadow-sm sm:mr-12 ${m.isError ? "border-red-400/50 bg-red-950/40 text-red-100" : ""}`
-              }
-            >
-              <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-wide text-current opacity-75">
-                {m.role === "user" ? "You" : m.isError ? "System" : "Coach"}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+          <div
+            ref={logRef}
+            onScroll={onLogScroll}
+            className="h-full min-h-0 space-y-3 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-smooth px-4 py-4 [-webkit-overflow-scrolling:touch]"
+          >
+            {chat.messages.length === 0 && !chat.sending && (
+              <div className="sc-fade-up flex flex-col items-center justify-center gap-3 py-12 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-sc-line bg-sc-elev text-3xl text-sc-gold/90">
+                  💬
+                </span>
+                <p className="max-w-sm text-sm text-[#8c9a90]">
+                  Ask anything below, or use starter cards on the dashboard.
+                </p>
               </div>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</div>
-              {m.role === "assistant" && !m.isError && (
+            )}
+            {chat.messages.map((m, i) => (
+              <div
+                key={i}
+                style={
+                  m.role === "user" || m.isError ? { animationDelay: `${Math.min(i, 6) * 45}ms` } : undefined
+                }
+                className={
+                  (m.role === "user" || m.isError ? "sc-animate-message " : "") +
+                  (m.role === "user"
+                    ? "ml-4 rounded-2xl rounded-br-md bg-gradient-to-br from-sc-leaf to-[#2d5f49] px-4 py-3 text-[#f4faf7] shadow-[0_12px_40px_rgba(61,122,95,0.25)] transition-transform duration-200 hover:scale-[1.01] sm:ml-12"
+                    : `mr-4 rounded-2xl rounded-bl-md border border-sc-line bg-sc-elev px-4 py-3 text-sc-mist shadow-sm transition-transform duration-200 hover:scale-[1.005] sm:mr-12 ${m.isError ? "border-red-400/50 bg-red-950/40 text-red-100" : "sc-fade-up"}`)
+                }
+              >
+                <div className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-wide text-current opacity-80">
+                  {m.role === "user" ? (
+                    <IconUserBadge />
+                  ) : m.isError ? (
+                    <IconAlert />
+                  ) : (
+                    <IconCoachBadge />
+                  )}
+                  {m.role === "user" ? "You" : m.isError ? "System" : "Coach"}
+                </div>
+                {m.role === "assistant" && !m.isError ? (
+                  <AssistantMessageContent content={m.content} />
+                ) : (
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</div>
+                )}
+              </div>
+            ))}
+            {chat.sending && (
+              <div className="sc-animate-message mr-4 flex items-center gap-3 rounded-2xl rounded-bl-md border border-sc-line bg-sc-elev px-4 py-3 sm:mr-12">
+                <IconCoachBadge />
+                <div className="flex items-center gap-1.5 text-sm font-medium text-[#8c9a90]">
+                  <span className="text-sc-gold">Thinking</span>
+                  <span className="flex gap-1 pt-0.5">
+                    <span
+                      className="sc-thinking-dot inline-block h-1.5 w-1.5 rounded-full bg-sc-gold"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="sc-thinking-dot inline-block h-1.5 w-1.5 rounded-full bg-sc-gold"
+                      style={{ animationDelay: "160ms" }}
+                    />
+                    <span
+                      className="sc-thinking-dot inline-block h-1.5 w-1.5 rounded-full bg-sc-gold"
+                      style={{ animationDelay: "320ms" }}
+                    />
+                  </span>
+                </div>
+              </div>
+            )}
+            <div ref={bottomSentinelRef} className="h-1 shrink-0" aria-hidden />
+          </div>
+
+          {(showJumpTop || showJumpLatest) && (
+            <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-2">
+              {showJumpTop && (
                 <button
                   type="button"
-                  className="mt-2 text-xs font-semibold text-sc-gold hover:underline"
-                  onClick={() => appendFromAssistant(m.content)}
+                  onClick={() => scrollToTop("smooth")}
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-sc-line bg-sc-elev/95 text-sc-mist shadow-lg backdrop-blur-sm transition hover:border-sc-gold hover:text-sc-gold hover:shadow-[0_8px_24px_rgba(212,168,75,0.15)] active:scale-95"
+                  title="Jump to top"
+                  aria-label="Scroll conversation to top"
                 >
-                  Add to editor
+                  <IconChevronUp />
+                </button>
+              )}
+              {showJumpLatest && (
+                <button
+                  type="button"
+                  onClick={() => scrollToBottom("smooth")}
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-sc-gold/40 bg-sc-leaf/90 text-[#f4faf7] shadow-lg backdrop-blur-sm transition hover:bg-sc-leaf active:scale-95"
+                  title="Jump to latest"
+                  aria-label="Scroll to latest message"
+                >
+                  <IconChevronDown />
                 </button>
               )}
             </div>
-          ))}
-          {chat.sending && (
-            <p className="text-sm text-[#8c9a90]">
-              <span className="font-semibold text-sc-gold">Thinking</span>…
-            </p>
           )}
         </div>
 
-        <div className="border-t border-sc-line bg-sc-elev p-4">
+        <div className="border-t border-sc-line bg-sc-elev p-4 transition-colors duration-300">
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             <select
               value={chat.agentLane}
               onChange={(e) => chat.onLaneChange(e.target.value)}
-              className="rounded-lg border border-sc-line bg-sc-bg px-2 py-1.5 font-medium text-sc-mist"
+              className="rounded-lg border border-sc-line bg-sc-bg px-2 py-1.5 font-medium text-sc-mist transition hover:border-sc-gold/35"
             >
               <option value="auto">Coach: Auto</option>
               <option value="general">General</option>
@@ -125,7 +344,7 @@ export function StudioChatWorkspace({ getToken, initialPrompt }: Props) {
               <option value="tertiary">Tertiary</option>
               <option value="educator">Educator</option>
             </select>
-            <label className="flex cursor-pointer items-center gap-1.5 text-[#9caaa0]">
+            <label className="flex cursor-pointer items-center gap-1.5 text-[#9caaa0] transition hover:text-sc-mist">
               <input
                 type="checkbox"
                 checked={chat.hintsMode}
@@ -144,15 +363,16 @@ export function StudioChatWorkspace({ getToken, initialPrompt }: Props) {
           </div>
           <form
             onSubmit={(e) => void chat.onSubmit(e)}
-            className="flex gap-2 rounded-2xl border border-sc-line bg-sc-bg p-2 pl-3 focus-within:border-sc-gold/45"
+            className="flex gap-2 rounded-2xl border border-sc-line bg-sc-bg p-2 pl-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-[border-color,box-shadow] duration-300 focus-within:border-sc-gold/45 focus-within:shadow-[0_0_0_1px_rgba(212,168,75,0.12)]"
           >
             <button
               type="button"
               onClick={() => chat.fileInputRef.current?.click()}
-              className="shrink-0 self-end rounded-lg px-2 py-2 text-[#8c9a90] hover:bg-sc-elev hover:text-sc-gold"
-              title="Attach"
+              className="shrink-0 self-end rounded-lg p-2 text-[#8c9a90] transition hover:bg-sc-elev hover:text-sc-gold active:scale-95"
+              title="Attach file"
+              aria-label="Attach file"
             >
-              📎
+              <IconAttach />
             </button>
             <textarea
               value={chat.input}
@@ -170,22 +390,16 @@ export function StudioChatWorkspace({ getToken, initialPrompt }: Props) {
             <button
               type="submit"
               disabled={chat.sending}
-              className="shrink-0 self-end rounded-xl bg-gradient-to-br from-sc-leaf to-[#2d5f49] px-4 py-2.5 text-sm font-bold text-[#f4faf7] shadow-[0_8px_24px_rgba(61,122,95,0.35)] disabled:opacity-50"
-              aria-label="Send"
+              className="flex shrink-0 items-center justify-center self-end rounded-xl bg-gradient-to-br from-sc-leaf to-[#2d5f49] px-4 py-2.5 text-[#f4faf7] shadow-[0_8px_24px_rgba(61,122,95,0.35)] transition hover:shadow-[0_10px_28px_rgba(61,122,95,0.45)] disabled:opacity-50 active:scale-[0.96]"
+              aria-label="Send message"
             >
-              ➤
+              <IconSend />
             </button>
           </form>
           {chat.file && <p className="mt-1 truncate text-xs text-[#6a756d]">Attached: {chat.file.name}</p>}
         </div>
       </div>
-
-      <StudioEditorPanel
-        value={editorContent}
-        onChange={setEditorContent}
-        lastAssistantText={lastAssistant}
-        onAppendFromAssistant={appendFromAssistant}
-      />
+      <StudioCoachCalendar getToken={getToken} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { subjectFocusOptionsForPath } from "@/data/assessmentSubjectFocus";
+import { LEARNER_PROFILE_UPDATED_EVENT } from "@/lib/promptLibraryFromProfile";
 import type { GtecInstitution, GtecPayload } from "@/types/gtec";
 
 const STEPS = 5;
@@ -179,6 +180,11 @@ export default function AssessmentPage() {
       const uuid = crypto.randomUUID();
       localStorage.setItem("ghana_study_thread_id", uuid);
       localStorage.setItem("ghana_learner_profile", JSON.stringify(profile));
+      try {
+        window.dispatchEvent(new Event(LEARNER_PROFILE_UPDATED_EVENT));
+      } catch {
+        /* ignore */
+      }
       sessionStorage.setItem("ghana_show_assessment_welcome", "1");
     } catch {
       alert("Could not save in this browser.");

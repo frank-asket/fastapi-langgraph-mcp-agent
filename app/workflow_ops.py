@@ -24,6 +24,7 @@ from app.document_extract import (
 )
 from app.schemas import HistoryMessage, HistoryResponse, LearnerProfile, WorkflowRequest, WorkflowResponse
 from app.thread_registry import assert_access, register_owner
+from app.trust_safety import augment_assistant_reply, log_if_suspicious_reply
 from app.workflows.graph import get_workflow_graph
 
 logger = logging.getLogger(__name__)
@@ -197,6 +198,8 @@ async def execute_workflow(
     last = msgs[-1]
     content = last.content if isinstance(last, AIMessage) else getattr(last, "content", last)
     text = content if isinstance(content, str) else str(content)
+    log_if_suspicious_reply(text, settings)
+    text = augment_assistant_reply(text, settings)
     return WorkflowResponse(reply=text, thread_id=thread_id, agent_lane=lane)
 
 
@@ -239,6 +242,7 @@ async def workflow_history_result(request: Request, thread_id: str) -> HistoryRe
         elif isinstance(m, AIMessage):
             text = lc_content(m.content)
             if text.strip():
+                text = augment_assistant_reply(text, settings)
                 out.append(HistoryMessage(role="assistant", content=text))
     return HistoryResponse(thread_id=tid, messages=out)
 
@@ -321,6 +325,7 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
     config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
 
     async def gen() -> AsyncIterator[dict[str, str]]:
+        assembled: list[str] = []
         try:
             async for msg, _meta in graph.astream(
                 {"messages": [human_msg]},
@@ -335,10 +340,22 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
                     c = msg.content
                     chunk = c if isinstance(c, str) else str(c)
                 if chunk:
+                    assembled.append(chunk)
                     yield {"event": "token", "data": json.dumps({"text": chunk})}
+            full = "".join(assembled)
+            log_if_suspicious_reply(full, settings)
+            with_footer = augment_assistant_reply(full, settings)
+            if len(with_footer) > len(full):
+                yield {"event": "token", "data": json.dumps({"text": with_footer[len(full) :]})}
             yield {
                 "event": "done",
-                "data": json.dumps({"thread_id": thread_id, "agent_lane": lane}),
+                "data": json.dumps(
+                    {
+                        "thread_id": thread_id,
+                        "agent_lane": lane,
+                        "reply": with_footer,
+                    }
+                ),
             }
         except Exception as e:  # noqa: BLE001
             logger.exception("workflow_stream failed")

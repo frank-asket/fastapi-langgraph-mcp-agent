@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from starlette.responses import Response
 
 from app.access import access_codes_match, session_auth_info
 from app.agent_lanes import DEFAULT_AGENT_LANE, VALID_AGENT_LANES
@@ -86,8 +87,16 @@ async def service_info() -> dict[str, Any]:
         "workflow_upload": "/workflow/upload",
         "workflow_stream": "/workflow/stream",
         "workflow_history": "/workflow/history",
+        "timetable": "/timetable",
+        "timetable_me": "/timetable/me",
+        "timetable_notifications": "/timetable/notifications",
+        "timetable_import": "/timetable/import",
         "checkpoint_sqlite": settings.checkpoint_sqlite_path,
         "thread_registry_db": settings.thread_registry_db_path,
+        "timetable_db": settings.timetable_db_path,
+        "timetable_notifications_enabled": settings.timetable_notifications_enabled,
+        "timetable_notify_ai_enabled": settings.timetable_notify_ai_enabled,
+        "sendgrid_configured": bool((settings.sendgrid_api_key or "").strip()),
         "mcp_http": "/agent/mcp",
         "mcp_client_url_hint": settings.resolved_mcp_http_url,
         "agent_lanes": sorted(VALID_AGENT_LANES),
@@ -152,6 +161,7 @@ async def gate_page() -> HTMLResponse | RedirectResponse:
 @limiter.limit(dynamic_gate_limit)
 async def gate_session(
     request: Request,
+    response: Response,
     access_code: str = Form(...),
     next: str = Form("/studio/chat"),
 ) -> RedirectResponse:

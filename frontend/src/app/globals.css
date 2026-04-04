@@ -16,3 +16,65 @@ body {
   color: var(--color-sc-mist);
   font-family: var(--font-figtree), system-ui, sans-serif;
 }
+
+@keyframes sc-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sc-thinking-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes sc-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sc-animate-message {
+  animation: sc-message-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sc-thinking-dot {
+  animation: sc-thinking-pulse 1s ease-in-out infinite;
+}
+
+.sc-fade-up {
+  animation: sc-fade-up 0.35s ease-out both;
+}
+
+/* Staggered reveal for assistant reply lines (inside bubble, after bubble mounts) */
+@keyframes sc-assistant-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sc-assistant-line {
+  animation: sc-assistant-line-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

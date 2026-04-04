@@ -1,6 +1,11 @@
 """HTTP API request/response models for Study Coach."""
 
-from pydantic import BaseModel, Field
+import re
+
+from pydantic import BaseModel, Field, field_validator
+
+
+_HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 class LearnerProfile(BaseModel):
@@ -50,3 +55,90 @@ class HistoryMessage(BaseModel):
 class HistoryResponse(BaseModel):
     thread_id: str
     messages: list[HistoryMessage]
+
+
+def _validate_hhmm(v: str) -> str:
+    s = (v or "").strip()
+    if not _HHMM.match(s):
+        raise ValueError("Expected HH:MM (24h)")
+    return s
+
+
+class TimetablePreferencesUpdate(BaseModel):
+    timezone: str = Field(default="Africa/Accra", min_length=2, max_length=80)
+    notify_email: bool = True
+    notify_in_app: bool = True
+    study_prep_minutes: int = Field(default=45, ge=5, le=180)
+    rest_after_minutes: int = Field(default=15, ge=0, le=120)
+    focus_reminder_local: str | None = Field(
+        default=None,
+        description="Daily focus reminder at local time HH:MM, or null to disable.",
+    )
+    goals_summary: str | None = Field(default=None, max_length=2000)
+    notification_email: str | None = Field(
+        default=None,
+        description="Optional override; must match where you want SendGrid mail.",
+    )
+
+    @field_validator("focus_reminder_local")
+    @classmethod
+    def focus_time(cls, v: str | None) -> str | None:
+        if v is None or not str(v).strip():
+            return None
+        return _validate_hhmm(str(v).strip())
+
+
+class TimetablePreferencesOut(BaseModel):
+    timezone: str
+    notify_email: bool
+    notify_in_app: bool
+    study_prep_minutes: int
+    rest_after_minutes: int
+    focus_reminder_local: str | None
+    goals_summary: str | None
+    notification_email: str | None
+
+
+class TimetableSlotCreate(BaseModel):
+    weekday: int = Field(..., ge=0, le=6, description="0=Monday … 6=Sunday")
+    start_time: str = Field(..., min_length=5, max_length=5)
+    end_time: str = Field(..., min_length=5, max_length=5)
+    title: str = Field(..., min_length=1, max_length=200)
+    location: str | None = Field(default=None, max_length=200)
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def times(cls, v: str) -> str:
+        return _validate_hhmm(v)
+
+
+class TimetableSlotOut(BaseModel):
+    id: str
+    weekday: int
+    start_time: str
+    end_time: str
+    title: str
+    location: str | None
+
+
+class TimetableMeResponse(BaseModel):
+    preferences: TimetablePreferencesOut
+    slots: list[TimetableSlotOut]
+
+
+class TimetableInAppNotification(BaseModel):
+    id: str
+    title: str
+    body: str
+    kind: str
+    created_at: str
+    read_at: str | None
+
+
+class TimetableNotificationsResponse(BaseModel):
+    notifications: list[TimetableInAppNotification]
+
+
+class TimetableImportResponse(BaseModel):
+    added: list[TimetableSlotOut]
+    message: str
