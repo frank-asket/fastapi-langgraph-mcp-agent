@@ -155,10 +155,27 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        raw = (self.cors_origins or "").strip()
-        if not raw:
-            return []
-        return [x.strip() for x in raw.split(",") if x.strip()]
+        """Origins allowed for browser CORS. Merges `cors_origins` with `study_coach_frontend_url` so production
+        isn’t blocked when the custom frontend host is set but `CORS_ORIGINS` was only updated for Vercel preview."""
+        out: list[str] = []
+        seen_lower: set[str] = set()
+
+        def add(origin: str) -> None:
+            o = origin.strip()
+            if not o:
+                return
+            k = o.lower()
+            if k in seen_lower:
+                return
+            seen_lower.add(k)
+            out.append(o)
+
+        for part in (self.cors_origins or "").split(","):
+            add(part)
+        front = self.study_coach_frontend_base
+        if front:
+            add(front)
+        return out
 
     @property
     def clerk_jwt_configured(self) -> bool:
