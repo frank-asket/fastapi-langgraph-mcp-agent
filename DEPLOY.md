@@ -56,6 +56,12 @@ Similar patterns work on **Railway**, **Render**, or a **VPS** with Docker and a
 
 `next.config.ts` adds `images.remotePatterns` from `NEXT_PUBLIC_API_URL` so optimized images can load from your API `/static/**` when needed.
 
+### Next.js security patches / `@next/swc-*` versions
+
+Stay on the **latest `next` in your minor line** (for 15.3.x, use the newest patch e.g. **15.3.8**). [CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478) names **15.3.6** as the *first* fixed 15.3.x release; **15.3.7+** still contains that fix and adds patches for later RSC issues ([Dec 2025 advisory](https://nextjs.org/blog/security-update-2025-12-11))—**do not pin only 15.3.6** unless you have a specific reason.
+
+In `package-lock.json`, **`next@15.3.x`** may list optional **`@next/swc-*`** at **15.3.5**. That is what the published `next` package declares on npm (there are no `15.3.6+` releases of those `@next/swc-*` packages for that line). It is intentional, not a lockfile mistake.
+
 ## 3. Clerk
 
 - **Authorized redirect / allowed origins**: production frontend URL(s).
