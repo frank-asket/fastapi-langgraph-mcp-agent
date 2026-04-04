@@ -4,6 +4,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
+import { NotificationSettingsPanel } from "@/components/studio/NotificationSettingsPanel";
 import { syncTimetableGoalsFromAssessment } from "@/lib/timetableGoalsSync";
 import {
   emitTimetableChanged,
@@ -14,6 +15,7 @@ import {
   timetableMarkRead,
   type GetTokenFn,
   type TimetableMe,
+  type TimetablePreferences,
 } from "@/lib/timetableApi";
 
 const hasClerkPk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -73,6 +75,10 @@ function StudioTimetableWorkspaceInner({
     }
   }
 
+  function patchPrefs(partial: Partial<TimetablePreferences>) {
+    setData((d) => (d ? { ...d, preferences: { ...d.preferences, ...partial } } : d));
+  }
+
   async function onImportSelected(file: File | null) {
     if (!file) return;
     setSaving(true);
@@ -115,6 +121,10 @@ function StudioTimetableWorkspaceInner({
               <Link href="/studio/chat" className="text-sc-gold underline hover:text-sc-mist">
                 Coach
               </Link>
+              . Notification channels and timing also live under{" "}
+              <Link href="/studio/settings" className="text-sc-gold underline hover:text-sc-mist">
+                Settings
+              </Link>
               .
             </p>
           </div>
@@ -126,143 +136,16 @@ function StudioTimetableWorkspaceInner({
           </div>
         )}
 
-        <section className="mt-10 rounded-2xl border border-sc-line bg-sc-elev p-5">
-          <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Notification settings</h2>
-          <p className="mt-1 text-sm text-[#8c9a90]">
-            Times use your timezone. Email requires <code className="text-sc-gold">SENDGRID_API_KEY</code> on the API.
-          </p>
-          {prefs && (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm sm:col-span-2">
-                <span className="text-[#8c9a90]">Goals (from assessment)</span>
-                <p className="mt-1 rounded-lg border border-sc-line/80 bg-sc-bg/60 px-3 py-2 text-sm text-sc-mist">
-                  {prefs.goals_summary?.trim() ? (
-                    prefs.goals_summary
-                  ) : (
-                    <span className="text-[#6a756d]">
-                      No goals in your saved assessment yet. Complete the{" "}
-                      <Link href="/assessment" className="text-sc-gold underline">
-                        assessment
-                      </Link>{" "}
-                      to personalise nudges.
-                    </span>
-                  )}
-                </p>
-              </label>
-              <label className="block text-sm">
-                <span className="text-[#8c9a90]">Timezone (IANA)</span>
-                <input
-                  className="mt-1 w-full rounded-lg border border-sc-line bg-sc-bg px-3 py-2 text-sc-mist"
-                  value={prefs.timezone}
-                  onChange={(e) => setData((d) => (d ? { ...d, preferences: { ...d.preferences, timezone: e.target.value } } : d))}
-                  onBlur={() => savePrefs({ timezone: prefs.timezone })}
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="text-[#8c9a90]">Email for SendGrid</span>
-                <input
-                  type="email"
-                  className="mt-1 w-full rounded-lg border border-sc-line bg-sc-bg px-3 py-2 text-sc-mist"
-                  value={prefs.notification_email ?? ""}
-                  onChange={(e) =>
-                    setData((d) =>
-                      d ? { ...d, preferences: { ...d.preferences, notification_email: e.target.value || null } } : d,
-                    )
-                  }
-                  onBlur={() => savePrefs({ notification_email: prefs.notification_email })}
-                  placeholder="you@school.edu"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="text-[#8c9a90]">Study prep (minutes before class)</span>
-                <input
-                  type="number"
-                  min={5}
-                  max={180}
-                  className="mt-1 w-full rounded-lg border border-sc-line bg-sc-bg px-3 py-2 text-sc-mist"
-                  value={prefs.study_prep_minutes}
-                  onChange={(e) =>
-                    setData((d) =>
-                      d
-                        ? {
-                            ...d,
-                            preferences: { ...d.preferences, study_prep_minutes: Number(e.target.value) || 45 },
-                          }
-                        : d,
-                    )
-                  }
-                  onBlur={() => savePrefs({ study_prep_minutes: prefs.study_prep_minutes })}
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="text-[#8c9a90]">Rest after class (minutes)</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={120}
-                  className="mt-1 w-full rounded-lg border border-sc-line bg-sc-bg px-3 py-2 text-sc-mist"
-                  value={prefs.rest_after_minutes}
-                  onChange={(e) =>
-                    setData((d) =>
-                      d
-                        ? {
-                            ...d,
-                            preferences: { ...d.preferences, rest_after_minutes: Number(e.target.value) || 15 },
-                          }
-                        : d,
-                    )
-                  }
-                  onBlur={() => savePrefs({ rest_after_minutes: prefs.rest_after_minutes })}
-                />
-              </label>
-              <label className="block text-sm sm:col-span-2">
-                <span className="text-[#8c9a90]">Daily focus reminder (local HH:MM, optional)</span>
-                <input
-                  className="mt-1 w-full max-w-xs rounded-lg border border-sc-line bg-sc-bg px-3 py-2 text-sc-mist"
-                  value={prefs.focus_reminder_local ?? ""}
-                  onChange={(e) =>
-                    setData((d) =>
-                      d
-                        ? { ...d, preferences: { ...d.preferences, focus_reminder_local: e.target.value || null } }
-                        : d,
-                    )
-                  }
-                  onBlur={() =>
-                    savePrefs({
-                      focus_reminder_local: prefs.focus_reminder_local?.trim() || null,
-                    })
-                  }
-                  placeholder="07:00"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={prefs.notify_email}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setData((d) => (d ? { ...d, preferences: { ...d.preferences, notify_email: v } } : d));
-                    void savePrefs({ notify_email: v });
-                  }}
-                />
-                <span className="text-sc-mist">Email nudges (SendGrid)</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={prefs.notify_in_app}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setData((d) => (d ? { ...d, preferences: { ...d.preferences, notify_in_app: v } } : d));
-                    void savePrefs({ notify_in_app: v });
-                  }}
-                />
-                <span className="text-sc-mist">In-app nudges</span>
-              </label>
-            </div>
-          )}
-          {saving && <p className="mt-3 text-xs text-[#6a756d]">Saving…</p>}
-        </section>
+        {prefs && (
+          <div className="mt-10">
+            <NotificationSettingsPanel
+              prefs={prefs}
+              patchPrefs={patchPrefs}
+              savePrefs={savePrefs}
+              saving={saving}
+            />
+          </div>
+        )}
 
         <section className="mt-6 rounded-2xl border border-sc-line bg-sc-elev p-5">
           <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Import timetable</h2>

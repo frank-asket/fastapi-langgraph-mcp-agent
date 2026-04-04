@@ -11,6 +11,7 @@ const nav = [
   { href: "/studio", label: "Dashboard", icon: "◆" },
   { href: "/studio/chat", label: "Coach", icon: "💬" },
   { href: "/studio/timetable", label: "Timetable", icon: "🗓️" },
+  { href: "/studio/settings", label: "Settings", icon: "⚙️" },
 ];
 
 const promptKids = [

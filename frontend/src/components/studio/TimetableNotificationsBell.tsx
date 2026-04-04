@@ -85,6 +85,13 @@ function BellPanel({ getToken }: { getToken?: GetTokenFn }) {
                 </button>
               )}
               <Link
+                href="/studio/settings"
+                className="text-[0.65rem] font-semibold text-[#8c9a90] hover:text-sc-gold"
+                onClick={() => setOpen(false)}
+              >
+                Settings
+              </Link>
+              <Link
                 href="/studio/timetable"
                 className="text-[0.65rem] font-semibold text-sc-gold hover:underline"
                 onClick={() => setOpen(false)}
