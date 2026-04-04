@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getApiUrl,
+  workflowEmailExportUrl,
   workflowHistoryUrl,
   workflowUploadUrl,
   workflowUrl,
@@ -357,6 +358,35 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
     }
   }, [threadId]);
 
+  /** Email assistant markdown/plain text to the notification address saved under Account / Notification settings. */
+  const emailAssistantMessage = useCallback(
+    async (messageBody: string): Promise<{ sentTo: string }> => {
+      const h = await authHeaders();
+      const res = await fetch(workflowEmailExportUrl(), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...h },
+        body: JSON.stringify({ body: messageBody }),
+      });
+      const raw = await res.text();
+      let data: { detail?: unknown; sent_to?: string };
+      try {
+        data = JSON.parse(raw) as typeof data;
+      } catch {
+        data = { detail: raw || "Invalid response" };
+      }
+      if (!res.ok) {
+        const detail =
+          typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail ?? raw);
+        throw new Error(detail);
+      }
+      const sentTo = (data.sent_to || "").trim();
+      if (!sentTo) throw new Error("Server did not return sent_to.");
+      return { sentTo };
+    },
+    [authHeaders],
+  );
+
   /** Send a single-turn message (e.g. from starter cards) without requiring input state first. */
   const sendText = useCallback(
     async (text: string) => {
@@ -451,6 +481,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
     applyResume,
     clearProfile,
     copyThreadId,
+    emailAssistantMessage,
     loadHistory,
     readProfile,
   };

@@ -32,7 +32,8 @@ export function NotificationSettingsPanel({
         <a href={serviceMapUrl()} className="text-sc-gold underline hover:text-sc-mist" target="_blank" rel="noreferrer">
           API
         </a>
-        .
+        . The address below is also used when you tap <strong className="text-sc-mist">Email to me</strong> on a coach
+        reply in chat.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">

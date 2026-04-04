@@ -1,5 +1,7 @@
 """Rate limiting (SlowAPI) keyed by IP, session, or gate."""
 
+import hashlib
+
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -44,6 +46,21 @@ limiter = _make_limiter()
 
 def dynamic_workflow_limit() -> str:
     return f"{get_settings().workflow_requests_per_minute}/minute"
+
+
+def email_export_limit_key(request: Request) -> str:
+    """Stabilize hourly email-export caps per signed-in user (Bearer) or session / IP."""
+    auth = (request.headers.get("Authorization") or "").strip()
+    if auth.lower().startswith("bearer ") and len(auth) > 24:
+        return "email_export:" + hashlib.sha256(auth[7:256].encode()).hexdigest()[:24]
+    sid = request.session.get("learner_session_id")
+    if sid:
+        return f"email_export:sid:{sid}"
+    return "email_export:ip:" + get_remote_address(request)
+
+
+def dynamic_coach_email_export_limit() -> str:
+    return f"{get_settings().coach_email_exports_per_hour}/hour"
 
 
 def dynamic_gate_limit() -> str:

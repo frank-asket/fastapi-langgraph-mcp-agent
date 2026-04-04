@@ -23,3 +23,7 @@ export function workflowHistoryUrl(threadId: string): string {
   const q = new URLSearchParams({ thread_id: threadId });
   return `${getApiUrl()}/workflow/history?${q.toString()}`;
 }
+
+export function workflowEmailExportUrl(): string {
+  return `${getApiUrl()}/workflow/email-export`;
+}

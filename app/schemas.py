@@ -142,3 +142,15 @@ class TimetableNotificationsResponse(BaseModel):
 class TimetableImportResponse(BaseModel):
     added: list[TimetableSlotOut]
     message: str
+
+
+class EmailCoachExportRequest(BaseModel):
+    """Send an assistant reply to the learner's saved notification email (SendGrid)."""
+
+    body: str = Field(..., min_length=1, max_length=500_000)
+    subject: str | None = Field(default=None, max_length=200)
+
+
+class EmailCoachExportResponse(BaseModel):
+    ok: bool = True
+    sent_to: str

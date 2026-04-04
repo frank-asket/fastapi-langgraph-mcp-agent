@@ -45,6 +45,10 @@ class Settings(BaseSettings):
 
     #: Per-session-or-IP cap on workflow + stream endpoints.
     workflow_requests_per_minute: int = Field(default=40, ge=5, le=300)
+    #: Hourly cap per client (Bearer/session/IP) on POST /workflow/email-export.
+    coach_email_exports_per_hour: int = Field(default=8, ge=1, le=120)
+    #: Max characters for emailed coach message body (after strip).
+    coach_email_export_max_body_chars: int = Field(default=100_000, ge=2_000, le=500_000)
 
     #: POST /gate/session attempts per client IP (limits brute-force against the access code).
     gate_posts_per_minute: int = Field(default=25, ge=5, le=120)
@@ -155,8 +159,19 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        """Origins allowed for browser CORS. Merges `cors_origins` with `study_coach_frontend_url` so production
-        isn’t blocked when the custom frontend host is set but `CORS_ORIGINS` was only updated for Vercel preview."""
+        """Origins allowed for browser CORS.
+
+        If ``cors_origins`` is empty (e.g. ``CORS_ORIGINS=`` in env), returns ``[]`` so main.py skips
+        CORSMiddleware entirely—same as documented “disable CORS” behaviour. ``study_coach_frontend_url`` is
+        **not** appended in that case.
+
+        When ``cors_origins`` is non-empty, parses the comma-separated list and merges ``study_coach_frontend_url``
+        (if set) so the canonical UI origin is allowed without duplicating it in ``CORS_ORIGINS``.
+        """
+        raw = (self.cors_origins or "").strip()
+        if not raw:
+            return []
+
         out: list[str] = []
         seen_lower: set[str] = set()
 
@@ -170,7 +185,7 @@ class Settings(BaseSettings):
             seen_lower.add(k)
             out.append(o)
 
-        for part in (self.cors_origins or "").split(","):
+        for part in raw.split(","):
             add(part)
         front = self.study_coach_frontend_base
         if front:

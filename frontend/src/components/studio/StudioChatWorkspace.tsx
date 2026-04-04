@@ -77,6 +77,14 @@ function IconCopy() {
   );
 }
 
+function IconMail() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+    </svg>
+  );
+}
+
 function IconLogout() {
   return (
     <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -107,6 +115,7 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
   const pinnedToBottomRef = useRef(true);
   const [showJumpLatest, setShowJumpLatest] = useState(false);
   const [showJumpTop, setShowJumpTop] = useState(false);
+  const [emailingIndex, setEmailingIndex] = useState<number | null>(null);
   const starterSent = useRef(false);
 
   const chat = useWorkflowChat(getToken, clerkSessionReady);
@@ -268,6 +277,34 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                 ) : (
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</div>
                 )}
+                {m.role === "assistant" && !m.isError && m.content.trim() ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-sc-line/60 pt-2">
+                    <button
+                      type="button"
+                      disabled={emailingIndex === i || chat.sending}
+                      onClick={() => {
+                        void (async () => {
+                          setEmailingIndex(i);
+                          try {
+                            const { sentTo } = await chat.emailAssistantMessage(m.content);
+                            window.alert(`Sent to ${sentTo}. Check your inbox (and spam).`);
+                          } catch (e) {
+                            window.alert(e instanceof Error ? e.message : String(e));
+                          } finally {
+                            setEmailingIndex(null);
+                          }
+                        })();
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg/80 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#9caaa0] transition hover:border-sc-gold/50 hover:text-sc-gold disabled:opacity-50 sm:text-xs"
+                    >
+                      <IconMail />
+                      {emailingIndex === i ? "Sending…" : "Email to me"}
+                    </button>
+                    <span className="text-[0.6rem] text-[#6a756d] sm:text-[0.65rem]">
+                      Uses your address in Account → Notification settings
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ))}
             {chat.sending && (
