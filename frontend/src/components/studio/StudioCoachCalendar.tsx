@@ -109,7 +109,7 @@ function monthGrid(anchor: Date): { date: Date; inMonth: boolean }[][] {
   const first = new Date(y, m, 1);
   const start = startOfWeekMonday(first);
   const rows: { date: Date; inMonth: boolean }[][] = [];
-  let cur = new Date(start);
+  const cur = new Date(start);
   for (let r = 0; r < 6; r++) {
     const row: { date: Date; inMonth: boolean }[] = [];
     for (let c = 0; c < 7; c++) {
