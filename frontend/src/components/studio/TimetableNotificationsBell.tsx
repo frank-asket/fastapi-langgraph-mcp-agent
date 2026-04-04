@@ -85,11 +85,11 @@ function BellPanel({ getToken }: { getToken?: GetTokenFn }) {
                 </button>
               )}
               <Link
-                href="/studio/settings"
+                href="/studio/settings#notifications"
                 className="text-[0.65rem] font-semibold text-[#8c9a90] hover:text-sc-gold"
                 onClick={() => setOpen(false)}
               >
-                Settings
+                Notification settings
               </Link>
               <Link
                 href="/studio/timetable"

@@ -4,31 +4,12 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
-import { NotificationSettingsPanel } from "@/components/studio/NotificationSettingsPanel";
 import { syncTimetableGoalsFromAssessment } from "@/lib/timetableGoalsSync";
-import {
-  emitTimetableChanged,
-  timetableGetMe,
-  timetableImportFile,
-  timetablePutPreferences,
-  timetableListNotifications,
-  timetableMarkRead,
-  type GetTokenFn,
-  type TimetableMe,
-  type TimetablePreferences,
-} from "@/lib/timetableApi";
+import { emitTimetableChanged, timetableGetMe, timetableImportFile, type GetTokenFn } from "@/lib/timetableApi";
 
 const hasClerkPk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-function StudioTimetableWorkspaceInner({
-  getToken,
-  clerkUserEmail,
-}: {
-  getToken?: GetTokenFn;
-  clerkUserEmail?: string | null;
-}) {
-  const [data, setData] = useState<TimetableMe | null>(null);
-  const [notifs, setNotifs] = useState<Awaited<ReturnType<typeof timetableListNotifications>>>([]);
+function StudioTimetableWorkspaceInner({ getToken }: { getToken?: GetTokenFn }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,45 +20,17 @@ function StudioTimetableWorkspaceInner({
     try {
       setErr(null);
       await syncTimetableGoalsFromAssessment(getToken);
-      const me = await timetableGetMe(getToken);
-      setData(me);
-      const recent = await timetableListNotifications(getToken, false);
-      setNotifs(recent.slice(0, 12));
-      if (!me.preferences.notification_email && clerkUserEmail) {
-        await timetablePutPreferences({ notification_email: clerkUserEmail }, getToken);
-        setData(await timetableGetMe(getToken));
-      }
       emitTimetableChanged();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Could not load timetable");
+      setErr(e instanceof Error ? e.message : "Could not load");
     } finally {
       setLoading(false);
     }
-  }, [getToken, clerkUserEmail]);
+  }, [getToken]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  const prefs = data?.preferences;
-
-  async function savePrefs(patch: Parameters<typeof timetablePutPreferences>[0]) {
-    if (!data) return;
-    setSaving(true);
-    try {
-      const next = await timetablePutPreferences(patch, getToken);
-      setData({ ...data, preferences: next });
-      emitTimetableChanged();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function patchPrefs(partial: Partial<TimetablePreferences>) {
-    setData((d) => (d ? { ...d, preferences: { ...d.preferences, ...partial } } : d));
-  }
 
   async function onImportSelected(file: File | null) {
     if (!file) return;
@@ -87,7 +40,8 @@ function StudioTimetableWorkspaceInner({
     try {
       const r = await timetableImportFile(file, getToken);
       setImportMsg(r.message);
-      await load();
+      await timetableGetMe(getToken);
+      emitTimetableChanged();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Import failed");
     } finally {
@@ -109,23 +63,19 @@ function StudioTimetableWorkspaceInner({
           <AppLogo className="bg-sc-bg" size={64} priority />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-sc-gold">Schedule intelligence</p>
-            <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white">Timetable & nudges</h1>
+            <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white">Timetable</h1>
             <p className="mt-1 max-w-xl text-sm text-[#9caaa0]">
               Upload your class schedule (PDF, Word, or photo). The model uses an internal layout guide to structure
-              your week. Your <strong className="text-sc-mist">goals come from your assessment</strong> automatically
-              for personalised nudges — update them anytime on the{" "}
+              your week. Your <strong className="text-sc-mist">goals come from your assessment</strong> — update them on
+              the{" "}
               <Link href="/assessment" className="text-sc-gold underline hover:text-sc-mist">
                 assessment
               </Link>
-              . Imported classes appear in the <strong className="text-sc-mist">week calendar</strong> beside{" "}
+              . Classes show in the week calendar beside{" "}
               <Link href="/studio/chat" className="text-sc-gold underline hover:text-sc-mist">
                 Coach
               </Link>
-              . Notification channels and timing also live under{" "}
-              <Link href="/studio/settings" className="text-sc-gold underline hover:text-sc-mist">
-                Settings
-              </Link>
-              .
+              . Nudges and account options are under <strong className="text-sc-mist">Account</strong> in the sidebar.
             </p>
           </div>
         </div>
@@ -136,18 +86,7 @@ function StudioTimetableWorkspaceInner({
           </div>
         )}
 
-        {prefs && (
-          <div className="mt-10">
-            <NotificationSettingsPanel
-              prefs={prefs}
-              patchPrefs={patchPrefs}
-              savePrefs={savePrefs}
-              saving={saving}
-            />
-          </div>
-        )}
-
-        <section className="mt-6 rounded-2xl border border-sc-line bg-sc-elev p-5">
+        <section className="mt-10 rounded-2xl border border-sc-line bg-sc-elev p-5">
           <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Import timetable</h2>
           <p className="mt-1 text-sm text-[#8c9a90]">
             PDF, Word (.docx), or image (PNG, JPG, WebP, GIF). Your week view updates beside Coach; use × on a block
@@ -169,43 +108,12 @@ function StudioTimetableWorkspaceInner({
             )}
           </div>
         </section>
-
-        <section className="mt-6 rounded-2xl border border-sc-line bg-sc-elev p-5">
-          <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Recent in-app nudges</h2>
-          <ul className="mt-3 space-y-3 text-sm">
-            {notifs.length === 0 && <li className="text-[#6a756d]">None yet — nudges appear when times match.</li>}
-            {notifs.map((n) => (
-              <li key={n.id} className="rounded-lg border border-sc-line/80 bg-sc-bg/50 px-3 py-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-sc-mist">{n.title}</p>
-                    <p className="mt-1 text-xs text-[#8c9a90]">{n.body}</p>
-                    <p className="mt-1 text-[0.65rem] uppercase tracking-wide text-[#6a756d]">
-                      {n.kind} · {n.created_at}
-                      {n.read_at ? " · read" : ""}
-                    </p>
-                  </div>
-                  {!n.read_at && (
-                    <button
-                      type="button"
-                      className="shrink-0 text-xs font-bold text-sc-gold hover:underline"
-                      onClick={() => void timetableMarkRead(n.id, getToken).then(() => load())}
-                    >
-                      Read
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
       </div>
     </div>
   );
 }
 
 function WithClerkUser() {
-  const { user } = useUser();
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const getTokenSafe: GetTokenFn = useCallback(() => {
     const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE?.trim();
@@ -213,13 +121,12 @@ function WithClerkUser() {
     if (template) return getToken({ template });
     return getToken();
   }, [getToken, isLoaded, isSignedIn]);
-  const email = user?.primaryEmailAddress?.emailAddress ?? null;
-  return <StudioTimetableWorkspaceInner getToken={getTokenSafe} clerkUserEmail={email} />;
+  return <StudioTimetableWorkspaceInner getToken={getTokenSafe} />;
 }
 
 export function StudioTimetableWorkspace() {
   if (hasClerkPk) {
     return <WithClerkUser />;
   }
-  return <StudioTimetableWorkspaceInner getToken={undefined} clerkUserEmail={null} />;
+  return <StudioTimetableWorkspaceInner getToken={undefined} />;
 }

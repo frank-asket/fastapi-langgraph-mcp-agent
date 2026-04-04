@@ -9,6 +9,8 @@ import { syncTimetableGoalsFromAssessment } from "@/lib/timetableGoalsSync";
 import {
   emitTimetableChanged,
   timetableGetMe,
+  timetableListNotifications,
+  timetableMarkRead,
   timetablePutPreferences,
   type GetTokenFn,
   type TimetableMe,
@@ -25,6 +27,7 @@ function StudioSettingsWorkspaceInner({
   clerkUserEmail?: string | null;
 }) {
   const [data, setData] = useState<TimetableMe | null>(null);
+  const [notifs, setNotifs] = useState<Awaited<ReturnType<typeof timetableListNotifications>>>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -35,6 +38,8 @@ function StudioSettingsWorkspaceInner({
       await syncTimetableGoalsFromAssessment(getToken);
       const me = await timetableGetMe(getToken);
       setData(me);
+      const recent = await timetableListNotifications(getToken, false);
+      setNotifs(recent.slice(0, 12));
       if (!me.preferences.notification_email && clerkUserEmail) {
         await timetablePutPreferences({ notification_email: clerkUserEmail }, getToken);
         setData(await timetableGetMe(getToken));
@@ -83,13 +88,13 @@ function StudioSettingsWorkspaceInner({
         <div className="flex flex-wrap items-start gap-4">
           <AppLogo className="bg-sc-bg" size={56} />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-sc-gold">Workspace</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-sc-gold">Account</p>
             <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white">Settings</h1>
             <p className="mt-1 max-w-xl text-sm text-[#9caaa0]">
-              General preferences and how Study Coach reaches you. Import your weekly grid on the{' '}
+              Workspace preferences and notifications. Import your schedule on the{" "}
               <Link href="/studio/timetable" className="text-sc-gold underline hover:text-sc-mist">
                 Timetable
-              </Link>{' '}
+              </Link>{" "}
               page.
             </p>
           </div>
@@ -101,43 +106,81 @@ function StudioSettingsWorkspaceInner({
           </div>
         )}
 
-        <section className="mt-10 rounded-2xl border border-sc-line bg-sc-elev p-5">
+        <section
+          id="general"
+          className="mt-10 scroll-mt-8 rounded-2xl border border-sc-line bg-sc-elev p-5"
+        >
           <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">General</h2>
           <p className="mt-2 text-sm leading-relaxed text-[#8c9a90]">
-            Your learning profile and subject focus come from the{' '}
+            Your learning profile and subject focus come from the{" "}
             <Link href="/assessment" className="font-semibold text-sc-gold underline hover:text-sc-mist">
               assessment
             </Link>
-            . Coach threads and the prompt library use that context. These fields do not replace your school’s official
-            calendar—use timetable import for class times.
+            . Coach threads and the prompt library use that context. Class times come from your{" "}
+            <Link href="/studio/timetable" className="text-sc-gold underline hover:text-sc-mist">
+              timetable import
+            </Link>
+            .
           </p>
           <ul className="mt-4 list-inside list-disc space-y-1 text-sm text-[#9caaa0]">
             <li>
               <Link href="/studio/chat" className="text-sc-gold underline hover:text-sc-mist">
                 Coach
-              </Link>{' '}
+              </Link>{" "}
               — main chat workspace
             </li>
             <li>
               <Link href="/studio/timetable" className="text-sc-gold underline hover:text-sc-mist">
                 Timetable
-              </Link>{' '}
-              — import schedule and view recent in-app nudges
+              </Link>{" "}
+              — import weekly class grid
             </li>
           </ul>
         </section>
 
-        {prefs && (
-          <div className="mt-6">
+        <div id="notifications" className="mt-6 scroll-mt-8 space-y-6">
+          {prefs && (
             <NotificationSettingsPanel
               prefs={prefs}
               patchPrefs={patchPrefs}
               savePrefs={savePrefs}
               saving={saving}
-              heading="Notifications"
+              heading="Notification settings"
             />
-          </div>
-        )}
+          )}
+
+          <section className="rounded-2xl border border-sc-line bg-sc-elev p-5">
+            <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Recent in-app nudges</h2>
+            <ul className="mt-3 space-y-3 text-sm">
+              {notifs.length === 0 && (
+                <li className="text-[#6a756d]">None yet — nudges appear when times match your timetable.</li>
+              )}
+              {notifs.map((n) => (
+                <li key={n.id} className="rounded-lg border border-sc-line/80 bg-sc-bg/50 px-3 py-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-sc-mist">{n.title}</p>
+                      <p className="mt-1 text-xs text-[#8c9a90]">{n.body}</p>
+                      <p className="mt-1 text-[0.65rem] uppercase tracking-wide text-[#6a756d]">
+                        {n.kind} · {n.created_at}
+                        {n.read_at ? " · read" : ""}
+                      </p>
+                    </div>
+                    {!n.read_at && (
+                      <button
+                        type="button"
+                        className="shrink-0 text-xs font-bold text-sc-gold hover:underline"
+                        onClick={() => void timetableMarkRead(n.id, getToken).then(() => load())}
+                      >
+                        Read
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </div>
     </div>
   );
