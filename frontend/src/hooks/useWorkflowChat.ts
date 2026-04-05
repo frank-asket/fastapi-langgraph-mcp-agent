@@ -58,6 +58,9 @@ function escapeHtml(s: string): string {
 export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boolean) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
+  /** Current thread id for merge logic without listing ``threadId`` on ``refreshPastThreads`` (avoids duplicate /workflow/threads fetches). */
+  const threadIdRef = useRef<string | null>(null);
+  threadIdRef.current = threadId;
   const [input, setInput] = useState("");
   const [resumeInput, setResumeInput] = useState("");
   const [agentLane, setAgentLane] = useState("auto");

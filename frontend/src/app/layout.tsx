@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Syne, Figtree } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { FirstLoginAssessmentRedirect } from "@/components/auth/FirstLoginAssessmentRedirect";
 import "./globals.css";
 
 const syne = Syne({
@@ -38,13 +39,18 @@ export default function RootLayout({
       <body
         className={`${syne.variable} ${figtree.variable} min-h-dvh overflow-x-hidden antialiased`}
       >
+        {clerkPk ? <FirstLoginAssessmentRedirect /> : null}
         {children}
       </body>
     </html>
   );
 
   if (clerkPk) {
-    return <ClerkProvider>{tree}</ClerkProvider>;
+    return (
+      <ClerkProvider signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/">
+        {tree}
+      </ClerkProvider>
+    );
   }
   return tree;
 }

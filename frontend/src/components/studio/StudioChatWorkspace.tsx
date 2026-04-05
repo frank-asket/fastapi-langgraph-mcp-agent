@@ -213,6 +213,14 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                 </svg>
                 Thread: {chat.threadId ? `${chat.threadId.slice(0, 8)}…` : "new after first message"}
               </p>
+              <p className="mt-1 max-w-md text-[0.62rem] leading-snug text-[#6a756d] sm:text-[0.65rem]">
+                Your saved{" "}
+                <a href="/studio/timetable" className="text-sc-gold/90 underline hover:text-sc-gold">
+                  weekly timetable
+                </a>{" "}
+                is sent to the coach each message for study plans, revision, and exam-prep timing (heuristics—not grade
+                predictions).
+              </p>
             </div>
           </div>
           <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:gap-2">

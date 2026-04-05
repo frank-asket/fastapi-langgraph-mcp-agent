@@ -21,7 +21,7 @@ from app.trust_safety import augment_system_prompt
 logger = logging.getLogger(__name__)
 
 # Bump when MCP tool names, trust-safety prompt, or graph wiring change so workers rebuild the compiled graph.
-MCP_TOOLSET_VERSION = 7
+MCP_TOOLSET_VERSION = 8
 
 _graphs: dict[str, CompiledStateGraph] = {}
 _graph_cache_version: int | None = None

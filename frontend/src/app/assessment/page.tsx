@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { subjectFocusOptionsForPath } from "@/data/assessmentSubjectFocus";
@@ -23,6 +24,7 @@ function parseProgrammeCombo(key: string): { instId: string; programmeIndex: num
 }
 
 export default function AssessmentPage() {
+  const { user } = useUser();
   const [gtec, setGtec] = useState<GtecPayload | null>(null);
   const [gtecErr, setGtecErr] = useState<string | null>(null);
   const [step, setStep] = useState(0);
@@ -140,7 +142,7 @@ export default function AssessmentPage() {
     subjectFocus,
   ]);
 
-  const finish = useCallback(() => {
+  const finish = useCallback(async () => {
     if (!educationLevel) {
       setStep(0);
       setErr0(true);
@@ -190,8 +192,22 @@ export default function AssessmentPage() {
       alert("Could not save in this browser.");
       return;
     }
+    if (user) {
+      try {
+        const base =
+          user.unsafeMetadata && typeof user.unsafeMetadata === "object"
+            ? (user.unsafeMetadata as Record<string, unknown>)
+            : {};
+        await user.update({
+          unsafeMetadata: { ...base, assessmentCompleted: true },
+        });
+      } catch {
+        /* still open chat; gate may rely on local profile only until next load */
+      }
+    }
     window.location.href = "/studio/chat";
   }, [
+    user,
     educationLevel,
     shsTrack,
     tertiaryInstitutionId,
@@ -205,7 +221,7 @@ export default function AssessmentPage() {
   const onNext = () => {
     if (!validate()) return;
     if (step >= STEPS - 1) {
-      finish();
+      void finish();
       return;
     }
     setStep((s) => s + 1);

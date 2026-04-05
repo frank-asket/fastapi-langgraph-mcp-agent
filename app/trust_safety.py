@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 # --- Injected after MCP coach prompt (model-facing) -------------------------------------------
 
+TIMETABLE_COACH_SYSTEM_HINT = """
+**Timetable-aware coaching** — Some user messages include a labelled block with the learner's **saved weekly class timetable**
+(recurring slots from the app). Use it to personalize **study plans**, **revision spacing**, **exam preparation pacing**,
+and **workload balance**. Treat any **“heuristic workload”** lines as simple counts and day summaries—not statistical predictions,
+grade forecasts, or official calendars. Never invent exam dates or institution rules; remind learners to verify with their school.
+"""
+
 TRUTHFULNESS_SYSTEM_ADDENDUM = """
 **Truthfulness & anti-hallucination (mandatory — follow in every turn)**
 
@@ -40,9 +47,12 @@ DEFAULT_VERIFICATION_FOOTER = (
 
 
 def augment_system_prompt(base_system_prompt: str, settings: Settings) -> str:
-    if not settings.trust_safety_system_enforcement:
-        return base_system_prompt
-    return base_system_prompt.rstrip() + "\n\n" + TRUTHFULNESS_SYSTEM_ADDENDUM.strip()
+    parts: list[str] = [base_system_prompt.rstrip()]
+    if settings.workflow_timetable_context_enabled:
+        parts.append(TIMETABLE_COACH_SYSTEM_HINT.strip())
+    if settings.trust_safety_system_enforcement:
+        parts.append(TRUTHFULNESS_SYSTEM_ADDENDUM.strip())
+    return "\n\n".join(p for p in parts if p)
 
 
 def verification_footer(settings: Settings) -> str:

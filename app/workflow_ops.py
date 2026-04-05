@@ -15,7 +15,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.agent_lanes import DEFAULT_AGENT_LANE, resolve_agent_lane
 from app.clerk_auth import ensure_clerk_subscription
 from app.config import Settings, get_settings
-from app.constants import ATTACH_MARK_END, PROFILE_MARK_END
+from app.constants import ATTACH_MARK_END, PROFILE_MARK_END, TIMETABLE_MARK_END
 from app.access import verify_app_access
 from app.document_extract import (
     ALLOWED_DOCUMENT_SUFFIXES,
@@ -24,6 +24,7 @@ from app.document_extract import (
 )
 from app.schemas import HistoryMessage, HistoryResponse, LearnerProfile, WorkflowRequest, WorkflowResponse
 from app.thread_registry import assert_access, register_owner
+from app.timetable_context import timetable_context_for_owner
 from app.trust_safety import augment_assistant_reply, log_if_suspicious_reply
 from app.workflows.graph import get_workflow_graph
 
@@ -47,6 +48,8 @@ def lc_content(content: Any) -> str:
 def display_user_content(raw: str) -> str:
     if PROFILE_MARK_END in raw:
         raw = raw.split(PROFILE_MARK_END, 1)[1].strip()
+    if TIMETABLE_MARK_END in raw:
+        raw = raw.split(TIMETABLE_MARK_END, 1)[1].strip()
     if ATTACH_MARK_END in raw:
         raw = raw.split(ATTACH_MARK_END, 1)[1].strip()
     return raw
@@ -121,11 +124,14 @@ async def build_human_message(
     thread_id: str,
     *,
     attachment_block: str | None = None,
+    timetable_block: str | None = None,
 ) -> HumanMessage:
     human_text = body.message
     prefix_parts: list[str] = []
     if body.learner_profile and not await thread_has_messages(graph, thread_id):
         prefix_parts.append(format_profile_block(body.learner_profile) + f"\n{PROFILE_MARK_END}")
+    if timetable_block:
+        prefix_parts.append(timetable_block.rstrip() + f"\n{TIMETABLE_MARK_END}")
     if attachment_block:
         prefix_parts.append(attachment_block.rstrip())
     if prefix_parts:
@@ -173,11 +179,13 @@ async def execute_workflow(
     lane = resolve_agent_lane(body.agent_lane, body.learner_profile)
     try:
         graph = await get_workflow_graph(settings, saver, lane)
+        timetable_block = timetable_context_for_owner(settings, owner_sid)
         human_msg = await build_human_message(
             graph,
             body,
             thread_id,
             attachment_block=attachment_block,
+            timetable_block=timetable_block,
         )
         result = await graph.ainvoke(
             {"messages": [human_msg]},
@@ -321,7 +329,14 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
 
     lane = resolve_agent_lane(body.agent_lane, body.learner_profile)
     graph = await get_workflow_graph(settings, saver, lane)
-    human_msg = await build_human_message(graph, body, thread_id, attachment_block=None)
+    timetable_block = timetable_context_for_owner(settings, owner_sid)
+    human_msg = await build_human_message(
+        graph,
+        body,
+        thread_id,
+        attachment_block=None,
+        timetable_block=timetable_block,
+    )
     config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
 
     async def gen() -> AsyncIterator[dict[str, str]]:
