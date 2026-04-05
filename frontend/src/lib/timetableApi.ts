@@ -18,6 +18,8 @@ export type TimetablePreferences = {
   focus_reminder_local: string | null;
   goals_summary: string | null;
   notification_email: string | null;
+  /** When true, coach /workflow turns may include saved weekly timetable context (server flag must also be on). */
+  include_timetable_in_coach?: boolean;
 };
 
 export type TimetableSlot = {

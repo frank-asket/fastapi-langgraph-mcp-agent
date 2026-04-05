@@ -138,6 +138,22 @@ export function NotificationSettingsPanel({
           />
           <span className="text-sc-mist">In-app nudges</span>
         </label>
+        <label className="flex items-start gap-2 text-sm sm:col-span-2">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={prefs.include_timetable_in_coach ?? true}
+            onChange={(e) => {
+              const v = e.target.checked;
+              patchPrefs({ include_timetable_in_coach: v });
+              void savePrefs({ include_timetable_in_coach: v });
+            }}
+          />
+          <span className="text-sc-mist">
+            Include my saved timetable in Coach messages (plans, workload). Turn off for more privacy or shorter
+            prompts.
+          </span>
+        </label>
       </div>
       {saving && <p className="mt-3 text-xs text-[#6a756d]">Saving…</p>}
     </div>

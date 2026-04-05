@@ -67,6 +67,7 @@ def _prefs_out(d: dict) -> TimetablePreferencesOut:
         focus_reminder_local=d.get("focus_reminder_local"),
         goals_summary=d.get("goals_summary"),
         notification_email=d.get("notification_email"),
+        include_timetable_in_coach=d.get("include_timetable_in_coach", True),
     )
 
 
@@ -105,6 +106,7 @@ async def timetable_put_preferences(
                 if body.notification_email and body.notification_email.strip()
                 else None
             ),
+            "include_timetable_in_coach": body.include_timetable_in_coach,
         },
     )
     return _prefs_out(updated)

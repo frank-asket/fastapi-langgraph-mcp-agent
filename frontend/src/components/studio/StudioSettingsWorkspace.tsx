@@ -41,7 +41,7 @@ function StudioSettingsWorkspaceInner({
       const recent = await timetableListNotifications(getToken, false);
       setNotifs(recent.slice(0, 12));
       if (!me.preferences.notification_email && clerkUserEmail) {
-        await timetablePutPreferences({ notification_email: clerkUserEmail }, getToken);
+        await timetablePutPreferences({ ...me.preferences, notification_email: clerkUserEmail }, getToken);
         setData(await timetableGetMe(getToken));
       }
       emitTimetableChanged();
@@ -62,7 +62,7 @@ function StudioSettingsWorkspaceInner({
     if (!data) return;
     setSaving(true);
     try {
-      const next = await timetablePutPreferences(patch, getToken);
+      const next = await timetablePutPreferences({ ...data.preferences, ...patch }, getToken);
       setData({ ...data, preferences: next });
       emitTimetableChanged();
     } catch (e) {

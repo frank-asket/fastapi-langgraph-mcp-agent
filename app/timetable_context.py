@@ -18,6 +18,8 @@ def timetable_context_for_owner(settings: Settings, owner_id: str | None) -> str
         return None
     path = Path(settings.timetable_db_path).expanduser().resolve()
     prefs = get_prefs(path, owner_id)
+    if not prefs.get("include_timetable_in_coach", True):
+        return None
     slots = list_slots(path, owner_id)
     if not slots:
         return None

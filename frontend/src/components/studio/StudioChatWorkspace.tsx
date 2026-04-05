@@ -214,11 +214,18 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                 Thread: {chat.threadId ? `${chat.threadId.slice(0, 8)}…` : "new after first message"}
               </p>
               <p className="mt-1 max-w-md text-[0.62rem] leading-snug text-[#6a756d] sm:text-[0.65rem]">
-                Your saved{" "}
+                When <strong className="font-semibold text-[#8c9a90]">Include timetable in Coach</strong> is on ({" "}
+                <a
+                  href="/studio/settings#notifications"
+                  className="text-sc-gold/90 underline hover:text-sc-gold"
+                >
+                  Account → Notification settings
+                </a>
+                ), your saved{" "}
                 <a href="/studio/timetable" className="text-sc-gold/90 underline hover:text-sc-gold">
                   weekly timetable
                 </a>{" "}
-                is sent to the coach each message for study plans, revision, and exam-prep timing (heuristics—not grade
+                is sent with each message for study plans, revision, and exam-prep timing (heuristics—not grade
                 predictions).
               </p>
             </div>

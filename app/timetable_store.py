@@ -61,7 +61,17 @@ def _connect(path: Path) -> sqlite3.Connection:
         """
     )
     conn.commit()
+    _migrate_timetable_prefs(conn)
     return conn
+
+
+def _migrate_timetable_prefs(conn: sqlite3.Connection) -> None:
+    cols = {str(row[1]) for row in conn.execute("PRAGMA table_info(timetable_prefs)").fetchall()}
+    if "include_timetable_in_coach" not in cols:
+        conn.execute(
+            "ALTER TABLE timetable_prefs ADD COLUMN include_timetable_in_coach INTEGER NOT NULL DEFAULT 1",
+        )
+        conn.commit()
 
 
 def _row_prefs(r: sqlite3.Row | None) -> dict[str, Any]:
@@ -75,6 +85,7 @@ def _row_prefs(r: sqlite3.Row | None) -> dict[str, Any]:
             "focus_reminder_local": None,
             "goals_summary": None,
             "notification_email": None,
+            "include_timetable_in_coach": True,
         }
     return {
         "timezone": r["timezone"],
@@ -85,6 +96,7 @@ def _row_prefs(r: sqlite3.Row | None) -> dict[str, Any]:
         "focus_reminder_local": r["focus_reminder_local"],
         "goals_summary": r["goals_summary"],
         "notification_email": r["notification_email"],
+        "include_timetable_in_coach": bool(r["include_timetable_in_coach"]),
     }
 
 
@@ -106,8 +118,8 @@ def upsert_prefs(path: Path, owner_id: str, data: dict[str, Any]) -> dict[str, A
                 """INSERT INTO timetable_prefs (
                        owner_id, timezone, notify_email, notify_in_app,
                        study_prep_minutes, rest_after_minutes, focus_reminder_local,
-                       goals_summary, notification_email, updated_at
-                   ) VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))
+                       goals_summary, notification_email, include_timetable_in_coach, updated_at
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now'))
                    ON CONFLICT(owner_id) DO UPDATE SET
                      timezone = excluded.timezone,
                      notify_email = excluded.notify_email,
@@ -117,6 +129,7 @@ def upsert_prefs(path: Path, owner_id: str, data: dict[str, Any]) -> dict[str, A
                      focus_reminder_local = excluded.focus_reminder_local,
                      goals_summary = excluded.goals_summary,
                      notification_email = excluded.notification_email,
+                     include_timetable_in_coach = excluded.include_timetable_in_coach,
                      updated_at = datetime('now')""",
                 (
                     owner_id,
@@ -128,6 +141,7 @@ def upsert_prefs(path: Path, owner_id: str, data: dict[str, Any]) -> dict[str, A
                     data.get("focus_reminder_local"),
                     data.get("goals_summary"),
                     data.get("notification_email"),
+                    1 if data.get("include_timetable_in_coach", True) else 0,
                 ),
             )
             conn.commit()

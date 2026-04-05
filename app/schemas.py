@@ -79,6 +79,10 @@ class TimetablePreferencesUpdate(BaseModel):
         default=None,
         description="Optional override; must match where you want SendGrid mail.",
     )
+    include_timetable_in_coach: bool = Field(
+        default=True,
+        description="When True, each /workflow coach turn may include saved weekly timetable context.",
+    )
 
     @field_validator("focus_reminder_local")
     @classmethod
@@ -97,6 +101,7 @@ class TimetablePreferencesOut(BaseModel):
     focus_reminder_local: str | None
     goals_summary: str | None
     notification_email: str | None
+    include_timetable_in_coach: bool
 
 
 class TimetableSlotCreate(BaseModel):
