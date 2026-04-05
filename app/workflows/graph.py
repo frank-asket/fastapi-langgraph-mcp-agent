@@ -17,11 +17,12 @@ from langgraph.prebuilt import create_react_agent
 from app.agent_lanes import DEFAULT_AGENT_LANE, MCP_PROMPT_BY_LANE, VALID_AGENT_LANES
 from app.config import Settings
 from app.trust_safety import augment_system_prompt
+from app.workflows.supervisor import build_supervisor_graph
 
 logger = logging.getLogger(__name__)
 
 # Bump when MCP tool names, trust-safety prompt, or graph wiring change so workers rebuild the compiled graph.
-MCP_TOOLSET_VERSION = 8
+MCP_TOOLSET_VERSION = 9
 
 _graphs: dict[str, CompiledStateGraph] = {}
 _graph_cache_version: int | None = None
@@ -154,16 +155,32 @@ async def get_workflow_graph(
         if settings.openai_base_url and str(settings.openai_base_url).strip():
             model_kw["base_url"] = str(settings.openai_base_url).strip().rstrip("/")
         model = ChatOpenAI(**model_kw)
-        graph = create_react_agent(
+        coach_subgraph = create_react_agent(
             model,
             tools,
             prompt=system_prompt,
-            checkpointer=checkpointer,
+            checkpointer=None,
             pre_model_hook=pre_model_openai_message_compat,
         )
+        if settings.workflow_supervisor_enabled:
+            compiled = build_supervisor_graph(coach_subgraph).compile(checkpointer=checkpointer)
+            setattr(compiled, "stream_subgraphs", True)
+            graph = compiled
+            mode = "supervisor+react"
+        else:
+            graph = create_react_agent(
+                model,
+                tools,
+                prompt=system_prompt,
+                checkpointer=checkpointer,
+                pre_model_hook=pre_model_openai_message_compat,
+            )
+            setattr(graph, "stream_subgraphs", False)
+            mode = "react"
         _graphs[lane] = graph
         logger.info(
-            "Compiled LangGraph react agent lane=%s prompt=%s (%d MCP tools, %s)",
+            "Compiled LangGraph %s lane=%s prompt=%s (%d MCP tools, %s)",
+            mode,
             lane,
             prompt_name,
             len(tools),

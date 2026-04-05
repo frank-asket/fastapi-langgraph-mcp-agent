@@ -23,6 +23,8 @@ from app.document_extract import (
     normalize_upload_filename,
 )
 from app.schemas import HistoryMessage, HistoryResponse, LearnerProfile, WorkflowRequest, WorkflowResponse
+from app.message_content import display_user_content, lc_content
+
 from app.thread_registry import assert_access, register_owner
 from app.timetable_context import timetable_context_for_owner
 from app.trust_safety import augment_assistant_reply, log_if_suspicious_reply
@@ -31,28 +33,12 @@ from app.workflows.graph import get_workflow_graph
 logger = logging.getLogger(__name__)
 
 
-def lc_content(content: Any) -> str:
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                parts.append(str(block.get("text", "")))
-            else:
-                parts.append(str(block))
-        return "".join(parts)
-    return str(content)
-
-
-def display_user_content(raw: str) -> str:
-    if PROFILE_MARK_END in raw:
-        raw = raw.split(PROFILE_MARK_END, 1)[1].strip()
-    if TIMETABLE_MARK_END in raw:
-        raw = raw.split(TIMETABLE_MARK_END, 1)[1].strip()
-    if ATTACH_MARK_END in raw:
-        raw = raw.split(ATTACH_MARK_END, 1)[1].strip()
-    return raw
+def _unpack_stream_message_item(item: Any) -> Any:
+    if isinstance(item, tuple) and len(item) == 3:
+        return item[1]
+    if isinstance(item, tuple) and len(item) == 2:
+        return item[0]
+    return item
 
 
 def format_profile_block(p: LearnerProfile) -> str:
@@ -341,12 +327,15 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
 
     async def gen() -> AsyncIterator[dict[str, str]]:
         assembled: list[str] = []
+        stream_subgraphs = bool(getattr(graph, "stream_subgraphs", False))
         try:
-            async for msg, _meta in graph.astream(
+            async for raw in graph.astream(
                 {"messages": [human_msg]},
                 config,
                 stream_mode="messages",
+                subgraphs=stream_subgraphs,
             ):
+                msg = _unpack_stream_message_item(raw)
                 chunk = ""
                 if isinstance(msg, AIMessageChunk):
                     c = msg.content
@@ -358,6 +347,15 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
                     assembled.append(chunk)
                     yield {"event": "token", "data": json.dumps({"text": chunk})}
             full = "".join(assembled)
+            if not full.strip():
+                snap = await graph.aget_state(config)
+                msgs_tail = (snap.values or {}).get("messages") or [] if snap else []
+                if msgs_tail:
+                    last = msgs_tail[-1]
+                    if isinstance(last, AIMessage):
+                        full = lc_content(last.content)
+                        if full.strip():
+                            yield {"event": "token", "data": json.dumps({"text": full})}
             log_if_suspicious_reply(full, settings)
             with_footer = augment_assistant_reply(full, settings)
             if len(with_footer) > len(full):

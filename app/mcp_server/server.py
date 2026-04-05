@@ -1,5 +1,6 @@
 """FastMCP server: Ghana-focused education, curriculum context & digital literacy tools."""
 
+import json
 import logging
 import re
 from typing import Any
@@ -214,6 +215,68 @@ Not substitutes for **WAEC** rules or timetables:
 *Use **GTEC** + each institution’s **official .edu.gh** site; never pay random “clearing agents.”*""",
 }
 
+# Seed index for tool-first syllabus-shaped answers (extend/replace with NaCCA-aligned corpora later).
+# Each row carries a stable source_mcp_id for coach citations.
+_CURRICULUM_TOPIC_SEED: dict[str, dict[str, list[dict[str, str]]]] = {
+    "jhs": {
+        "mathematics": [
+            {
+                "topic": "Fractions, decimals, and percentages",
+                "outcome_summary": "Represent rational numbers; solve contextual problems.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:jhs:mathematics:fractions_decimals_percentages",
+            },
+            {
+                "topic": "Algebraic expressions",
+                "outcome_summary": "Simplify, substitute, and model simple relationships.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:jhs:mathematics:algebraic_expressions",
+            },
+        ],
+        "english": [
+            {
+                "topic": "Reading comprehension & summary",
+                "outcome_summary": "Identify main ideas; infer meaning in exam-style passages.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:jhs:english:reading_comprehension",
+            },
+        ],
+        "integrated_science": [
+            {
+                "topic": "Scientific method & measurement",
+                "outcome_summary": "Variables, units, basic lab reasoning.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:jhs:science:scientific_method",
+            },
+        ],
+    },
+    "shs": {
+        "mathematics": [
+            {
+                "topic": "Functions and graphs",
+                "outcome_summary": "Linear/quadratic ideas; interpret graphs in context.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:shs:mathematics:functions_graphs",
+            },
+            {
+                "topic": "Calculus basics (differentiation intro)",
+                "outcome_summary": "Rates of change; basic rules—follow your SHS programme depth.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:shs:mathematics:calculus_intro",
+            },
+        ],
+        "english": [
+            {
+                "topic": "Essay writing & argument",
+                "outcome_summary": "Thesis, evidence, and WASSCE-style organisation.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:shs:english:essay_argument",
+            },
+        ],
+        "physics": [
+            {
+                "topic": "Kinematics",
+                "outcome_summary": "Displacement, velocity, acceleration; graphs of motion.",
+                "source_mcp_id": "curriculum_topic_lookup:v1:shs:physics:kinematics",
+            },
+        ],
+    },
+}
+
+
 GHANA_UNIVERSITIES: list[tuple[str, str, str]] = [
     ("University of Ghana", "UG", "Greater Accra (Legon) — large comprehensive public university."),
     ("Kwame Nkrumah University of Science and Technology", "KNUST", "Kumasi — science, engineering, technology, architecture."),
@@ -238,6 +301,70 @@ GHANA_UNIVERSITIES: list[tuple[str, str, str]] = [
 
 def _normalize_q(s: str) -> str:
     return re.sub(r"\s+", " ", s.strip().lower())
+
+
+def _normalize_curriculum_key(s: str) -> str:
+    return re.sub(r"\s+", "_", s.strip().lower().replace("-", "_"))
+
+
+@mcp.tool
+def curriculum_topic_lookup(level: str, subject: str, topic_query: str) -> str:
+    """JHS/SHS curriculum-shaped topic chips with stable source_mcp_id values for citations.
+
+    Call this **before** claiming what is officially examinable for a named subject/level.
+    This is **seed data** from the Study Coach MCP layer—not a full NaCCA dump; learners must still follow school schemes & WAEC syllabi.
+    """
+    lv = _normalize_curriculum_key(level).replace("senior_high", "shs").replace("junior_high", "jhs")
+    if lv in ("basic", "primary"):
+        lv = "jhs"
+    sub = _normalize_curriculum_key(subject)
+    if sub in ("math", "maths"):
+        sub = "mathematics"
+    alias_sub = {
+        "science": "integrated_science",
+        "integratedscience": "integrated_science",
+        "gen_sci": "integrated_science",
+        "general_science": "integrated_science",
+    }
+    sub = alias_sub.get(sub, sub)
+    qn = _normalize_q(topic_query)
+    bucket = _CURRICULUM_TOPIC_SEED.get(lv, {}).get(sub)
+    if not bucket:
+        avail = []
+        for lk, subjects in _CURRICULUM_TOPIC_SEED.items():
+            avail.extend(f"{lk}:{k}" for k in subjects)
+        return json.dumps(
+            {
+                "level": lv,
+                "subject": sub,
+                "topics": [],
+                "source_mcp_id": "curriculum_topic_lookup:v1:miss",
+                "notes": "No seed rows for this level/subject. Name jhs|shs and a subject like mathematics, english, integrated_science, physics. "
+                f"Indexed keys include: {', '.join(sorted(set(avail))[:24])}{'…' if len(avail) > 24 else ''}",
+            },
+            ensure_ascii=False,
+        )
+
+    out_rows: list[dict[str, str]] = []
+    for row in bucket:
+        blob = _normalize_q(f"{row.get('topic', '')} {row.get('outcome_summary', '')}")
+        if not qn or qn in blob or any(tok in blob for tok in qn.split() if len(tok) > 2):
+            out_rows.append(row)
+        if len(out_rows) >= 6:
+            break
+    if not out_rows:
+        out_rows = bucket[:4]
+
+    return json.dumps(
+        {
+            "level": lv,
+            "subject": sub,
+            "topics": out_rows,
+            "source_mcp_id": "curriculum_topic_lookup:v1:bundle",
+            "notes": "Cite source_mcp_id per row when summarizing outcomes; confirm depth with your teacher and WAEC syllabus.",
+        },
+        ensure_ascii=False,
+    )
 
 
 @mcp.tool
@@ -488,6 +615,7 @@ _COACH_SHARED = """**Curriculum & admissions**
 - **English** is central to progression; respect that many learners also use **Ghanaian languages** at home—encourage clear expression in the language of instruction their teacher expects.
 
 **Tools (use when helpful)**
+- `curriculum_topic_lookup` — **syllabus-shaped topic chips** (JHS/SHS) with `source_mcp_id` for citations; use **before** claiming official examinable scope for a subject.
 - `ghana_education_overview` — pathways & exam context.
 - `ghana_learning_resources` — **curated URLs**: NaCCA/GES/WAEC, textbook hubs (T-TEL, College Desk, NNF), Pasco-style sites, **tertiary** (GTEC, UG/KNUST/UCC/UPSA, GhLA, GETFund, Scholarship Secretariat).
 - `ghana_tertiary_snapshot` — short blurbs on named universities (pair with `ghana_learning_resources` → tertiary for links).

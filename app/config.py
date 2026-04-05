@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     workflow_requests_per_minute: int = Field(default=40, ge=5, le=300)
     #: When True, inject the learner's saved weekly timetable (and workload hints) into each /workflow turn.
     workflow_timetable_context_enabled: bool = Field(default=True)
+    #: When True, wrap the MCP ReAct coach in a supervisor graph (user-risk scan → safety reply or coach).
+    workflow_supervisor_enabled: bool = Field(default=True)
     #: Hourly cap per client (Bearer/session/IP) on POST /workflow/email-export.
     coach_email_exports_per_hour: int = Field(default=8, ge=1, le=120)
     #: Max characters for emailed coach message body (after strip).
