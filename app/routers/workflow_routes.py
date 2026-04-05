@@ -10,7 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from starlette.responses import Response
 
 from app.access import verify_app_access
-from app.clerk_auth import ensure_clerk_subscription
+from app.clerk_auth import ensure_clerk_subscription, primary_email_from_clerk_claims
 from app.config import get_settings
 from app.limiting import (
     dynamic_coach_email_export_limit,
@@ -24,11 +24,15 @@ from app.schemas import (
     HistoryResponse,
     WorkflowRequest,
     WorkflowResponse,
+    WorkflowThreadsResponse,
+    WorkflowThreadMeta,
 )
+from app.thread_registry import list_threads_for_owner
 from app.timetable_messaging import send_sendgrid_email
-from app.timetable_store import get_prefs
+from app.timetable_store import get_prefs, upsert_prefs
 from app.workflow_ops import (
     execute_workflow,
+    registry_path,
     workflow_history_result,
     workflow_stream_response,
     workflow_upload_result,
@@ -39,7 +43,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _email_export_owner(request: Request) -> str:
+def _workflow_session_owner(request: Request) -> str:
+    """Stable owner id for the current session / Clerk user / API key (same as workflow routes)."""
     settings = get_settings()
     owner = verify_app_access(request, settings)
     if owner is None:
@@ -49,7 +54,7 @@ def _email_export_owner(request: Request) -> str:
             return ensure_session_learner_id(request)
         raise HTTPException(
             status_code=401,
-            detail="Sign in (or use configured access) to email this message.",
+            detail="Sign in (or use configured access) for this action.",
         )
     ensure_clerk_subscription(request, settings, owner)
     return owner
@@ -64,7 +69,7 @@ async def workflow_email_export(
 ) -> EmailCoachExportResponse:
     """Email assistant text to the learner's **notification_email** (timetable prefs), via SendGrid."""
     settings = get_settings()
-    owner = _email_export_owner(request)
+    owner = _workflow_session_owner(request)
 
     max_chars = settings.coach_email_export_max_body_chars
     text = body.body.strip()
@@ -85,14 +90,29 @@ async def workflow_email_export(
     path = Path(settings.timetable_db_path).expanduser().resolve()
     prefs = get_prefs(path, owner)
     to_email = (prefs.get("notification_email") or "").strip()
+    from_claims = False
+    if not to_email:
+        claims = getattr(request.state, "clerk_claims", None) or {}
+        cand = primary_email_from_clerk_claims(claims if isinstance(claims, dict) else None)
+        if cand:
+            to_email = cand
+            from_claims = True
     if not to_email:
         raise HTTPException(
             status_code=400,
             detail=(
-                "No notification email saved. Open Studio → Account / Notification settings, "
-                "enter **Email for SendGrid**, save, then try again."
+                "No email address available for this account. Open Studio → Account / Notification settings, "
+                "enter **Email for SendGrid**, save, then try again — or ensure your Clerk session token "
+                "includes the **email** claim."
             ),
         )
+    if from_claims and owner.startswith("clerk:"):
+        try:
+            merged = dict(prefs)
+            merged["notification_email"] = to_email
+            upsert_prefs(path, owner, merged)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to backfill notification_email from Clerk JWT")
 
     subject = (body.subject or "").strip() or "Your Study Coach message"
     esc = html.escape(text)
@@ -119,6 +139,29 @@ async def workflow_email_export(
             detail="Email could not be sent. Try again later or contact support.",
         )
     return EmailCoachExportResponse(sent_to=to_email)
+
+
+@router.get("/workflow/threads", response_model=WorkflowThreadsResponse)
+@limiter.limit(dynamic_workflow_limit)
+async def workflow_threads(
+    request: Request,
+    response: Response,
+    limit: int = 40,
+) -> WorkflowThreadsResponse:
+    """List recent coach thread IDs registered for this user (requires ``BIND_THREADS_TO_SESSION`` + auth)."""
+    settings = get_settings()
+    owner = _workflow_session_owner(request)
+    lim = max(1, min(limit, 100))
+    if (
+        not settings.auth_enabled
+        or not owner
+        or not settings.bind_threads_to_session
+    ):
+        return WorkflowThreadsResponse(threads=[])
+    rows = list_threads_for_owner(registry_path(), owner, limit=lim)
+    return WorkflowThreadsResponse(
+        threads=[WorkflowThreadMeta(**r) for r in rows],
+    )
 
 
 @router.get("/workflow/history", response_model=HistoryResponse)

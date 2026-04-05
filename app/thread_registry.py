@@ -50,6 +50,26 @@ def register_owner(path: Path, thread_id: str, owner_session_id: str) -> None:
             conn.close()
 
 
+def list_threads_for_owner(path: Path, owner_session_id: str, *, limit: int = 40) -> list[dict[str, str]]:
+    """Return recent ``thread_id`` rows for this owner (newest first). Used for coach chat history UI."""
+    lim = max(1, min(int(limit), 100))
+    with _lock:
+        conn = _connect(path)
+        try:
+            rows = conn.execute(
+                """
+                SELECT thread_id, created_at FROM thread_owner
+                WHERE owner_session_id = ?
+                ORDER BY datetime(created_at) DESC, thread_id DESC
+                LIMIT ?
+                """,
+                (owner_session_id, lim),
+            ).fetchall()
+            return [{"thread_id": str(r[0]), "created_at": str(r[1])} for r in rows]
+        finally:
+            conn.close()
+
+
 def assert_access(
     path: Path,
     thread_id: str,

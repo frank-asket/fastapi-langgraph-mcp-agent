@@ -16,6 +16,19 @@ logger = logging.getLogger(__name__)
 _jwks_clients: dict[str, PyJWKClient] = {}
 
 
+def primary_email_from_clerk_claims(claims: dict[str, Any] | None) -> str | None:
+    """Return a usable mailbox from Clerk session JWT claims (often ``email``), if present."""
+    if not claims:
+        return None
+    raw = claims.get("email")
+    if not isinstance(raw, str):
+        return None
+    s = raw.strip()
+    if 3 <= len(s) <= 320 and "@" in s:
+        return s
+    return None
+
+
 def clerk_jwks_url(settings: Settings) -> str | None:
     raw = (settings.clerk_jwks_url or "").strip().rstrip("/")
     if raw:

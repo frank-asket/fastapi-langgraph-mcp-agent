@@ -5,6 +5,7 @@ import {
   getApiUrl,
   workflowEmailExportUrl,
   workflowHistoryUrl,
+  workflowThreadsUrl,
   workflowUploadUrl,
   workflowUrl,
 } from "@/lib/api";
@@ -43,6 +44,8 @@ export type LearnerProfile = {
 
 export type ChatMsg = { role: "user" | "assistant"; content: string; isError?: boolean };
 
+export type PastThreadMeta = { thread_id: string; created_at: string };
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -62,16 +65,22 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
   const [sending, setSending] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pastThreads, setPastThreads] = useState<PastThreadMeta[]>([]);
+  const [pastThreadsLoading, setPastThreadsLoading] = useState(false);
 
   const authHeaders = useCallback(async () => {
     if (!getToken) return {} as Record<string, string>;
     if (clerkSessionReady === false) return {} as Record<string, string>;
-    try {
-      const t = await getToken();
-      return t ? { Authorization: `Bearer ${t}` } : {};
-    } catch {
-      return {};
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const t = await getToken();
+        if (t) return { Authorization: `Bearer ${t}` };
+      } catch {
+        /* Clerk can fail transiently right after sign-in */
+      }
+      await new Promise((r) => setTimeout(r, 55 * (attempt + 1)));
     }
+    return {} as Record<string, string>;
   }, [getToken, clerkSessionReady]);
 
   const readProfile = useCallback((): LearnerProfile | null => {
@@ -182,9 +191,47 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
     await fetchHistoryForThread(tid);
   }, [threadId, fetchHistoryForThread, getToken, clerkSessionReady]);
 
+  const refreshPastThreads = useCallback(async () => {
+    if (getToken != null && clerkSessionReady === false) return;
+    setPastThreadsLoading(true);
+    try {
+      const h = await authHeaders();
+      const res = await fetch(workflowThreadsUrl(40), {
+        credentials: "include",
+        headers: h,
+      });
+      let rows: PastThreadMeta[] = [];
+      if (res.ok) {
+        const data = (await res.json()) as { threads?: PastThreadMeta[] };
+        rows = Array.isArray(data.threads) ? data.threads : [];
+      }
+      let active = threadId;
+      if (!active) {
+        try {
+          active = localStorage.getItem(STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
+      const aid = active?.trim();
+      if (aid && !rows.some((r) => r.thread_id === aid)) {
+        rows = [{ thread_id: aid, created_at: new Date().toISOString() }, ...rows];
+      }
+      setPastThreads(rows);
+    } catch {
+      setPastThreads([]);
+    } finally {
+      setPastThreadsLoading(false);
+    }
+  }, [authHeaders, getToken, clerkSessionReady, threadId]);
+
   useEffect(() => {
     void loadHistory();
   }, [loadHistory, getToken, clerkSessionReady]);
+
+  useEffect(() => {
+    void refreshPastThreads();
+  }, [refreshPastThreads]);
 
   const appendMessage = useCallback((role: "user" | "assistant", content: string, isError?: boolean) => {
     setMessages((prev) => [...prev, { role, content, isError }]);
@@ -223,7 +270,26 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
     }
     setMessages([]);
     await fetchHistoryForThread(v);
-  }, [resumeInput, fetchHistoryForThread]);
+    void refreshPastThreads();
+  }, [resumeInput, fetchHistoryForThread, refreshPastThreads]);
+
+  const resumeThread = useCallback(
+    async (tid: string) => {
+      const v = tid.trim();
+      if (!v) return;
+      setThreadId(v);
+      try {
+        localStorage.setItem(STORAGE_KEY, v);
+      } catch {
+        /* ignore */
+      }
+      setResumeInput("");
+      setMessages([]);
+      await fetchHistoryForThread(v);
+      void refreshPastThreads();
+    },
+    [fetchHistoryForThread, refreshPastThreads],
+  );
 
   const onLaneChange = useCallback((v: string) => {
     setAgentLane(v);
@@ -318,6 +384,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
           }
         }
         appendMessage("assistant", data.reply?.trim() ? data.reply : "(Empty reply)");
+        void refreshPastThreads();
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           appendMessage(
@@ -343,6 +410,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
       readProfile,
       appendMessage,
       getToken,
+      refreshPastThreads,
     ],
   );
 
@@ -361,12 +429,24 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
   /** Email assistant markdown/plain text to the notification address saved under Account / Notification settings. */
   const emailAssistantMessage = useCallback(
     async (messageBody: string): Promise<{ sentTo: string }> => {
+      const trimmed = messageBody.trim();
+      if (!trimmed) {
+        throw new Error("Nothing to email — this message is empty.");
+      }
+      if (getToken && clerkSessionReady === false) {
+        throw new Error("Finish signing in before sending email.");
+      }
       const h = await authHeaders();
+      if (getToken && clerkSessionReady && !h.Authorization) {
+        throw new Error(
+          "Could not get a session token from Clerk. Wait a moment after sign-in, refresh the page, then try again.",
+        );
+      }
       const res = await fetch(workflowEmailExportUrl(), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...h },
-        body: JSON.stringify({ body: messageBody }),
+        body: JSON.stringify({ body: trimmed }),
       });
       const raw = await res.text();
       let data: { detail?: unknown; sent_to?: string };
@@ -384,7 +464,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
       if (!sentTo) throw new Error("Server did not return sent_to.");
       return { sentTo };
     },
-    [authHeaders],
+    [authHeaders, getToken, clerkSessionReady],
   );
 
   /** Send a single-turn message (e.g. from starter cards) without requiring input state first. */
@@ -441,6 +521,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
           }
         }
         appendMessage("assistant", data.reply?.trim() ? data.reply : "(Empty reply)");
+        void refreshPastThreads();
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           appendMessage(
@@ -456,7 +537,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
         setSending(false);
       }
     },
-    [threadId, hintsMode, agentLane, authHeaders, readProfile, appendMessage, getToken],
+    [threadId, hintsMode, agentLane, authHeaders, readProfile, appendMessage, getToken, refreshPastThreads],
   );
 
   return {
@@ -484,5 +565,9 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
     emailAssistantMessage,
     loadHistory,
     readProfile,
+    pastThreads,
+    pastThreadsLoading,
+    refreshPastThreads,
+    resumeThread,
   };
 }

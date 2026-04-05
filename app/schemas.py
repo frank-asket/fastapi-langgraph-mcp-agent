@@ -154,3 +154,12 @@ class EmailCoachExportRequest(BaseModel):
 class EmailCoachExportResponse(BaseModel):
     ok: bool = True
     sent_to: str
+
+
+class WorkflowThreadMeta(BaseModel):
+    thread_id: str
+    created_at: str
+
+
+class WorkflowThreadsResponse(BaseModel):
+    threads: list[WorkflowThreadMeta]

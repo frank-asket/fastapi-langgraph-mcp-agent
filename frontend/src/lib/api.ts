@@ -27,3 +27,8 @@ export function workflowHistoryUrl(threadId: string): string {
 export function workflowEmailExportUrl(): string {
   return `${getApiUrl()}/workflow/email-export`;
 }
+
+export function workflowThreadsUrl(limit = 40): string {
+  const q = new URLSearchParams({ limit: String(limit) });
+  return `${getApiUrl()}/workflow/threads?${q.toString()}`;
+}
