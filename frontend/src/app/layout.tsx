@@ -47,7 +47,7 @@ export default function RootLayout({
 
   if (clerkPk) {
     return (
-      <ClerkProvider signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/">
+      <ClerkProvider signInFallbackRedirectUrl="/studio" signUpFallbackRedirectUrl="/studio">
         {tree}
       </ClerkProvider>
     );

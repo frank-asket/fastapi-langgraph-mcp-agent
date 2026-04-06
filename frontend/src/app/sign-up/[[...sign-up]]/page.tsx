@@ -7,7 +7,13 @@ export default function SignUpPage() {
       <Link href="/" className="font-[family-name:var(--font-syne)] text-sm font-bold text-sc-gold hover:underline">
         ← Home
       </Link>
-      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
+      <SignUp
+        routing="path"
+        path="/sign-up"
+        signInUrl="/sign-in"
+        fallbackRedirectUrl="/studio"
+        signInFallbackRedirectUrl="/studio"
+      />
     </div>
   );
 }
