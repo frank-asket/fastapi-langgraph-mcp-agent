@@ -122,7 +122,7 @@ function tryParseLine(norm: string): DraftTimetableSlot | null {
     }
     const t0 = parseClockToken(startRaw.replace(/\s+/g, ""));
     if (!t0) return null;
-    let start = toHHMM(t0[0], t0[1]);
+    const start = toHHMM(t0[0], t0[1]);
     let end: string;
     if (endRaw) {
       const t1 = parseClockToken(endRaw.replace(/\s+/g, ""));
@@ -149,7 +149,7 @@ function tryParseLine(norm: string): DraftTimetableSlot | null {
     if (!t0 || !t1) return null;
     const weekday = lookupDay(tm[3]);
     if (weekday === undefined) return null;
-    let start = toHHMM(t0[0], t0[1]);
+    const start = toHHMM(t0[0], t0[1]);
     let end = toHHMM(t1[0], t1[1]);
     let title = (tm[4] || "").trim().replace(/^[,:\-–—|]+\s*/, "").slice(0, 200);
     if (!title) title = "Study block";
