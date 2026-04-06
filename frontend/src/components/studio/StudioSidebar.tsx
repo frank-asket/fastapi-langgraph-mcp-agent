@@ -2,10 +2,38 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { useCallback, useEffect, useState } from "react";
+import { UserButton, SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { TimetableNotificationsBell } from "@/components/studio/TimetableNotificationsBell";
+import { LEARNER_PROFILE_UPDATED_EVENT, readStoredLearnerProfile } from "@/lib/promptLibraryFromProfile";
+
+function useAssessmentCompleted(hasClerk: boolean): boolean {
+  const { user, isLoaded } = useUser();
+  const [storageDone, setStorageDone] = useState(false);
+
+  const refresh = useCallback(() => {
+    const p = readStoredLearnerProfile();
+    setStorageDone(Boolean(p?.education_level));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    const onUpdate = () => refresh();
+    window.addEventListener(LEARNER_PROFILE_UPDATED_EVENT, onUpdate);
+    window.addEventListener("storage", onUpdate);
+    return () => {
+      window.removeEventListener(LEARNER_PROFILE_UPDATED_EVENT, onUpdate);
+      window.removeEventListener("storage", onUpdate);
+    };
+  }, [refresh]);
+
+  if (hasClerk && isLoaded && user) {
+    const meta = user.unsafeMetadata as { assessmentCompleted?: boolean } | undefined;
+    if (meta?.assessmentCompleted === true) return true;
+  }
+  return storageDone;
+}
 
 const nav = [
   { href: "/studio", label: "Dashboard", icon: "◆" },
@@ -30,6 +58,7 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
   const [promptsOpen, setPromptsOpen] = useState(true);
   const [accountOpen, setAccountOpen] = useState(true);
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const assessmentCompleted = useAssessmentCompleted(hasClerk);
   const settingsActive = pathname === "/studio/settings" || pathname.startsWith("/studio/settings/");
   const [hash, setHash] = useState("");
   useEffect(() => {
@@ -125,20 +154,39 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
       </nav>
 
       <div className="p-3">
-        <div className="relative overflow-hidden rounded-2xl border border-sc-gold/25 bg-gradient-to-br from-sc-leaf to-[#2d5f49] p-4 shadow-lg">
-          <div className="pointer-events-none absolute -right-2 -top-2 text-4xl opacity-35" aria-hidden>
-            🚀
+        {assessmentCompleted ? (
+          <div className="relative overflow-hidden rounded-2xl border border-sc-gold/35 bg-gradient-to-br from-[#3d3020] to-[#2d5f49] p-4 shadow-lg">
+            <div className="pointer-events-none absolute -right-2 -top-2 text-4xl opacity-35" aria-hidden>
+              💳
+            </div>
+            <p className="relative font-[family-name:var(--font-syne)] text-sm font-bold text-white">Subscription</p>
+            <p className="relative mt-1 text-xs text-[#e8e0d4]">
+              View your plan, billing link, and how this app checks access.
+            </p>
+            <Link
+              href="/studio/settings#subscription"
+              onClick={closeMobile}
+              className="relative mt-3 inline-flex rounded-full border border-sc-gold/40 bg-sc-gold/15 px-3 py-1.5 text-xs font-bold text-sc-gold backdrop-blur hover:bg-sc-gold/25"
+            >
+              Open subscription
+            </Link>
           </div>
-          <p className="relative font-[family-name:var(--font-syne)] text-sm font-bold text-white">Go further</p>
-          <p className="relative mt-1 text-xs text-[#c4cfc7]">Personalise with assessment and full API access.</p>
-          <Link
-            href="/assessment"
-            onClick={closeMobile}
-            className="relative mt-3 inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur hover:bg-white/20"
-          >
-            Start assessment
-          </Link>
-        </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-2xl border border-sc-gold/25 bg-gradient-to-br from-sc-leaf to-[#2d5f49] p-4 shadow-lg">
+            <div className="pointer-events-none absolute -right-2 -top-2 text-4xl opacity-35" aria-hidden>
+              🚀
+            </div>
+            <p className="relative font-[family-name:var(--font-syne)] text-sm font-bold text-white">Go further</p>
+            <p className="relative mt-1 text-xs text-[#c4cfc7]">Personalise with assessment and full API access.</p>
+            <Link
+              href="/assessment"
+              onClick={closeMobile}
+              className="relative mt-3 inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur hover:bg-white/20"
+            >
+              Start assessment
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-sc-line p-3">
