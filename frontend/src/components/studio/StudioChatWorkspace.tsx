@@ -4,6 +4,8 @@ import { SignedIn, SignOutButton } from "@clerk/nextjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { useWorkflowChat, type GetTokenFn } from "@/hooks/useWorkflowChat";
+import { parseStudyPlanFromText } from "@/lib/studyPlanParser";
+import { AddStudyPlanToCalendarModal } from "./AddStudyPlanToCalendarModal";
 import { AssistantMessageContent } from "./AssistantMessageContent";
 import { StudioCoachCalendar } from "./StudioCoachCalendar";
 
@@ -94,6 +96,14 @@ function IconMail() {
   );
 }
 
+function IconCalendarPlus() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM5 7V6h14v1H5zm10 8h-2v2h-2v-2H9v-2h2v-2h2v2h2v2z" />
+    </svg>
+  );
+}
+
 function IconHistory() {
   return (
     <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -140,6 +150,8 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
   const [feedbackBusy, setFeedbackBusy] = useState<number | null>(null);
   const [feedbackDone, setFeedbackDone] = useState<{ i: number; kind: string } | null>(null);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [studyPlanModalOpen, setStudyPlanModalOpen] = useState(false);
+  const [studyPlanSource, setStudyPlanSource] = useState<string | null>(null);
   const starterSent = useRef(false);
 
   const chat = useWorkflowChat(getToken, clerkSessionReady);
@@ -151,6 +163,20 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
     });
     return idx;
   }, [chat.messages]);
+
+  const lastAssistantWithStudyPlanIndex = useMemo(() => {
+    let idx = -1;
+    chat.messages.forEach((m, i) => {
+      if (m.role !== "assistant" || m.isError || !m.content.trim()) return;
+      if (parseStudyPlanFromText(m.content).length > 0) idx = i;
+    });
+    return idx;
+  }, [chat.messages]);
+
+  const studyPlanDraftRows = useMemo(
+    () => (studyPlanSource ? parseStudyPlanFromText(studyPlanSource) : []),
+    [studyPlanSource],
+  );
 
   const { sendText } = chat;
 
@@ -213,6 +239,15 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch xl:flex-row">
+      <AddStudyPlanToCalendarModal
+        open={studyPlanModalOpen}
+        initialSlots={studyPlanDraftRows}
+        getToken={getToken}
+        onClose={() => {
+          setStudyPlanModalOpen(false);
+          setStudyPlanSource(null);
+        }}
+      />
       <div className="flex min-h-[min(52dvh,520px)] min-w-0 flex-1 flex-col bg-sc-bg xl:min-h-0">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sc-line bg-sc-elev px-3 py-2.5 transition-shadow duration-300 sm:gap-3 sm:px-4 sm:py-3 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
           <div className="flex min-w-0 items-start gap-2 sm:gap-3">
@@ -511,10 +546,31 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                       <IconMail />
                       {emailingIndex === i ? "Sending…" : "Email to me"}
                     </button>
+                    {i === lastAssistantWithStudyPlanIndex ? (
+                      <button
+                        type="button"
+                        disabled={chat.sending || (hasClerkPk && clerkSessionReady === false)}
+                        onClick={() => {
+                          setStudyPlanSource(m.content);
+                          setStudyPlanModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-sc-line bg-sc-bg/80 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#9caaa0] transition hover:border-emerald-500/40 hover:text-emerald-200/90 disabled:opacity-50 sm:text-xs"
+                      >
+                        <IconCalendarPlus />
+                        Add plan to timetable
+                      </button>
+                    ) : null}
                     </div>
                     <span className="text-[0.6rem] text-[#6a756d] sm:text-[0.65rem]">
                       Thumbs adjust coaching style (contextual bandit). Email uses the address in Account → Notification
                       settings.
+                      {i === lastAssistantWithStudyPlanIndex ? (
+                        <>
+                          {" "}
+                          <strong className="font-semibold text-[#8c9a90]">Add plan to timetable</strong> turns day/time
+                          lines in this reply into weekly recurring blocks (Studio Timetable).
+                        </>
+                      ) : null}
                     </span>
                     {feedbackDone?.i === i ? (
                       <span className="text-[0.65rem] text-emerald-200/80">
