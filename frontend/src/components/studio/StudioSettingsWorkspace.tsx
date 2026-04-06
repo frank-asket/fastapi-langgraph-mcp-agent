@@ -77,6 +77,18 @@ function StudioSettingsWorkspaceInner({
     setData((d) => (d ? { ...d, preferences: { ...d.preferences, ...partial } } : d));
   }
 
+  const [settingsHash, setSettingsHash] = useState(() =>
+    typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "",
+  );
+  useEffect(() => {
+    const sync = () => setSettingsHash(window.location.hash.replace(/^#/, ""));
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+
+  const subscriptionOnly = settingsHash === "subscription";
+
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-[#8c9a90]">Loading settings…</div>
@@ -143,49 +155,51 @@ function StudioSettingsWorkspaceInner({
           <SubscriptionSettingsPanel getToken={getToken} hasClerk={Boolean(hasClerkPk)} />
         </div>
 
-        <div id="notifications" className="mt-6 scroll-mt-8 space-y-6">
-          {prefs && (
-            <NotificationSettingsPanel
-              prefs={prefs}
-              patchPrefs={patchPrefs}
-              savePrefs={savePrefs}
-              saving={saving}
-              heading="Notification settings"
-            />
-          )}
+        {!subscriptionOnly ? (
+          <div id="notifications" className="mt-6 scroll-mt-8 space-y-6">
+            {prefs && (
+              <NotificationSettingsPanel
+                prefs={prefs}
+                patchPrefs={patchPrefs}
+                savePrefs={savePrefs}
+                saving={saving}
+                heading="Notification settings"
+              />
+            )}
 
-          <section className="rounded-2xl border border-sc-line bg-sc-elev p-5">
-            <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Recent in-app nudges</h2>
-            <ul className="mt-3 space-y-3 text-sm">
-              {notifs.length === 0 && (
-                <li className="text-[#6a756d]">None yet — nudges appear when times match your timetable.</li>
-              )}
-              {notifs.map((n) => (
-                <li key={n.id} className="rounded-lg border border-sc-line/80 bg-sc-bg/50 px-3 py-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-sc-mist">{n.title}</p>
-                      <p className="mt-1 text-xs text-[#8c9a90]">{n.body}</p>
-                      <p className="mt-1 text-[0.65rem] uppercase tracking-wide text-[#6a756d]">
-                        {n.kind} · {n.created_at}
-                        {n.read_at ? " · read" : ""}
-                      </p>
+            <section className="rounded-2xl border border-sc-line bg-sc-elev p-5">
+              <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Recent in-app nudges</h2>
+              <ul className="mt-3 space-y-3 text-sm">
+                {notifs.length === 0 && (
+                  <li className="text-[#6a756d]">None yet — nudges appear when times match your timetable.</li>
+                )}
+                {notifs.map((n) => (
+                  <li key={n.id} className="rounded-lg border border-sc-line/80 bg-sc-bg/50 px-3 py-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-sc-mist">{n.title}</p>
+                        <p className="mt-1 text-xs text-[#8c9a90]">{n.body}</p>
+                        <p className="mt-1 text-[0.65rem] uppercase tracking-wide text-[#6a756d]">
+                          {n.kind} · {n.created_at}
+                          {n.read_at ? " · read" : ""}
+                        </p>
+                      </div>
+                      {!n.read_at && (
+                        <button
+                          type="button"
+                          className="shrink-0 text-xs font-bold text-sc-gold hover:underline"
+                          onClick={() => void timetableMarkRead(n.id, getToken).then(() => load())}
+                        >
+                          Read
+                        </button>
+                      )}
                     </div>
-                    {!n.read_at && (
-                      <button
-                        type="button"
-                        className="shrink-0 text-xs font-bold text-sc-gold hover:underline"
-                        onClick={() => void timetableMarkRead(n.id, getToken).then(() => load())}
-                      >
-                        Read
-                      </button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        ) : null}
       </div>
     </div>
   );
