@@ -43,3 +43,11 @@ class CorsOriginListTests(TestCase):
             s.cors_origin_list,
             ["https://study.example.com", "https://other.example.com"],
         )
+
+    def test_cors_origin_regex_stripped(self) -> None:
+        s = Settings(cors_origin_regex="  ^https://study\\.example\\.com$  ")
+        self.assertEqual(s.cors_allow_origin_regex, "^https://study\\.example\\.com$")
+
+    def test_cors_origin_regex_none_when_empty(self) -> None:
+        s = Settings(cors_origin_regex="  \t  ")
+        self.assertIsNone(s.cors_allow_origin_regex)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +23,8 @@ from app.lifespan import core_lifespan
 from app.limiting import limiter
 from app.mcp_http import mcp_app
 from app.routers import account_routes, health, site, timetable_routes, webhooks, workflow_routes
+
+_log = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Study Coach API — AI tutoring for African education",
@@ -44,18 +48,25 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 _settings_for_cors = get_settings()
 _cors_origins = _settings_for_cors.cors_origin_list
-if _cors_origins:
+_cors_regex = _settings_for_cors.cors_allow_origin_regex
+if _cors_origins or _cors_regex:
     _cors_methods = [m.strip().upper() for m in _settings_for_cors.cors_allow_methods.split(",") if m.strip()]
     _cors_hdr_raw = (_settings_for_cors.cors_allow_headers or "").strip()
     _cors_headers = ["*"] if _cors_hdr_raw == "*" else [h.strip() for h in _cors_hdr_raw.split(",") if h.strip()]
     _cors_expose = [h.strip() for h in _settings_for_cors.cors_expose_headers.split(",") if h.strip()]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=_cors_origins,
+        allow_origins=_cors_origins or [],
+        allow_origin_regex=_cors_regex,
         allow_credentials=_settings_for_cors.cors_allow_credentials,
         allow_methods=_cors_methods or ["GET"],
         allow_headers=_cors_headers or ["*"],
         expose_headers=_cors_expose or None,
+    )
+    _log.info(
+        "CORS enabled: %d explicit origin(s)%s",
+        len(_cors_origins),
+        f", regex configured" if _cors_regex else "",
     )
 
 app.include_router(site.router)

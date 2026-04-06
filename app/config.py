@@ -80,6 +80,11 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://127.0.0.1:3000",
     )
 
+    #: Optional ``Origin`` regex (entire string must match; Starlette ``fullmatch``). Example for one subdomain level:
+    #: ``^https://[a-zA-Z0-9][-a-zA-Z0-9]*\\.example\\.com$``. Enables CORS middleware when non-empty even if
+    #: ``cors_origin_list`` is empty (use with care). Env: ``CORS_ORIGIN_REGEX``.
+    cors_origin_regex: str | None = None
+
     #: Allow cookies (SessionMiddleware) in cross-origin requests. Requires explicit origins (not *).
     cors_allow_credentials: bool = Field(default=True)
 
@@ -219,6 +224,11 @@ class Settings(BaseSettings):
         if front:
             add(front)
         return out
+
+    @property
+    def cors_allow_origin_regex(self) -> str | None:
+        r = (self.cors_origin_regex or "").strip()
+        return r if r else None
 
     @property
     def clerk_jwt_configured(self) -> bool:
