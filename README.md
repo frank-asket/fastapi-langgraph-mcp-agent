@@ -1,218 +1,257 @@
-# Study Coach — API backend
+<div align="center">
 
-**Study Coach** is a vertical AI platform built for **African education**: personalized tutoring that understands local programmes, **document intelligence** on your materials, and an architecture aimed at **offline-capable** use where connectivity is limited. We focus on Ghanaian learners (GES, SHS, WASSCE, tertiary) while staying relevant across the continent—making expert-level academic support more accessible **24/7** at a lower cost than traditional tutoring, without replacing teachers.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a3d2e,100:2d5f49&height=120&section=header&text=Study%20Coach&fontSize=42&fontColor=d4a84b&animation=twinkling&fontAlignY=32" alt="" width="100%"/>
 
-Under the hood this repo uses **FastAPI** for the HTTP API, **FastMCP** for tools and prompts over the [Model Context Protocol](https://modelcontextprotocol.io/), and **LangGraph** for the agent loop (reason → tool → observe → repeat) with optional checkpointed memory.
+<br/>
+
+[![Python](https://img.shields.io/badge/python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-agent-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+
+<br/>
+
+<!-- Animated tagline (SVG) — renders on GitHub -->
+<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Sans&weight=600&size=22&duration=3000&pause=1200&color=D4A84B&center=true&vCenter=true&width=780&lines=AI-powered+tutoring+for+Ghana+%26+African+learners;FastAPI+%E2%80%A2+LangGraph+%E2%80%A2+Model+Context+Protocol+%E2%80%A2+Next.js+Studio" alt="Study Coach tagline"/>
+
+<br/>
+
+**Personalised coaching · Document intelligence · Checkpointed threads · Clerk-ready auth**
+
+[**Quick start**](#-quick-start) · [**Architecture**](#-architecture) · [**Studio UI**](#-studio--nextjs-frontend) · [**Configuration**](#-configuration) · [**API**](#-api-essentials) · [**Deploy**](./DEPLOY.md)
+
+</div>
+
+---
+
+## Overview
+
+**Study Coach** is a vertical AI platform for **African education**: tutoring that respects **GES / SHS / WASSCE / tertiary** context, **document uploads** for your own materials, and **durable conversation memory** so learners can resume after restarts. The stack is built for clear separation between **HTTP gateway**, **tool & prompt surface (MCP)**, and **agent orchestration (LangGraph)**.
+
+| | |
+|:---|:---|
+| 🎯 **Focus** | Ghana-first curricula; extensible to the wider continent |
+| 🧠 **Agent** | ReAct loop with MCP tools, optional supervisor + multi-agent team router |
+| 💾 **Memory** | SQLite or in-memory checkpointers; `thread_id` scoped state |
+| 🌐 **Studio** | Next.js 15 dashboard, coach, timetable, assessment, subscription panel |
+
+---
 
 ## Architecture
 
-```text
-Client
-  |
-  | POST /workflow
-  v
-FastAPI
-  |
-  | MCP Client (HTTP)
-  v
-FastMCP Server
-  |        |
-Tools   Prompts
-  |
-LangGraph Agent
-```
-
-- **MCP** = tool and prompt server (discoverable, centralized).
-- **LangGraph** = orchestration and state (including `thread_id` for memory).
-- **FastAPI** = public gateway (optional gate + rate limits; **`POST /workflow/stream`** for SSE token streaming).
-
 ```mermaid
-flowchart LR
-  C[Client] --> F[FastAPI]
-  F --> M[MCP HTTP]
-  M --> T[Tools]
-  M --> P[Prompts]
-  F --> G[LangGraph]
-  G --> M
-  G --> LLM[LLM]
+flowchart TB
+  subgraph clients["Clients"]
+    WEB["Next.js / Studio"]
+    API_CLIENT["curl · integrations"]
+  end
+
+  subgraph gateway["API Gateway"]
+    FAST["FastAPI"]
+    CORS["CORS · sessions · rate limits"]
+  end
+
+  subgraph agent["Agent layer"]
+    LG["LangGraph"]
+    MCP_IN["MCP HTTP client"]
+  end
+
+  subgraph mcp["MCP server"]
+    TOOLS["Tools"]
+    PROMPTS["Prompts"]
+  end
+
+  subgraph data["Persistence"]
+    SQL["SQLite checkpoints · timetable · entitlements"]
+  end
+
+  WEB --> FAST
+  API_CLIENT --> FAST
+  FAST --> CORS
+  FAST --> LG
+  LG --> MCP_IN
+  MCP_IN --> TOOLS
+  MCP_IN --> PROMPTS
+  LG --> SQL
+  FAST --> SQL
 ```
+
+- **MCP** — Central tool & prompt registry ([Model Context Protocol](https://modelcontextprotocol.io/)).
+- **LangGraph** — Stateful graphs, `thread_id`, streaming.
+- **FastAPI** — Public API: workflow, uploads, history, SSE, timetable, webhooks.
+
+<details>
+<summary><strong>Legacy ASCII sketch</strong></summary>
+
+```text
+Client → POST /workflow → FastAPI → MCP Client → FastMCP (tools + prompts)
+                              ↓
+                         LangGraph ↔ LLM
+```
+
+</details>
+
+---
 
 ## Features
 
-- **Landing** at **`/`** (marketing page) and **`/assessment`** (short questionnaire → personalised **`/studio/chat`** on the Next app).
-- **Next.js web UI** at **`/studio`** and **`/studio/chat`**: calls `POST /workflow` with optional **`learner_profile`** on the **first** turn of a new thread (assessment results), plus **`thread_id`** for memory. **`coaching_mode`**: `full` (default) or `hints` (shorter nudges).
-- **Gate** at **`/gate`**: HTML form sets a session when **`APP_ACCESS_CODE`** is set; API clients can send **`X-App-Access-Code`** instead. The chat UI uses `credentials: "include"` so cookies work.
-- **Service map** (JSON) at **`/service`** (formerly the root JSON).
-- **Learning progress**: `thread_id` is stored in **localStorage** (survives tab close) and chat state in **SQLite** (`CHECKPOINT_SQLITE_PATH`, default `data/langgraph_checkpoints.db`) so students can continue after the API restarts. **`GET /workflow/history`** reloads past turns. Treat `thread_id` like a private link. With **`BIND_THREADS_TO_SESSION=true`**, the first session that uses a `thread_id` owns it (cross-device resume with the same learning ID still works if **`false`**).
-- HTTP agent API with a workflow endpoint.
-- MCP-defined tools (e.g. Wikipedia summaries, REST Countries).
-- MCP-defined system prompts (no hardcoded prompts inside the graph).
-- LangGraph conditional routing: chat node ↔ tool node until done.
-- Optional **Redis**-backed MCP event store for persistence and stream limits.
+- **Assessment → profile** — Short questionnaire feeds **`learner_profile`** on the first turn of a new thread.
+- **Coach** — `POST /workflow`, `POST /workflow/stream` (SSE tokens), optional **`coaching_mode`**: `full` | `hints`.
+- **Studio** — `/studio` dashboard, `/studio/chat`, `/studio/timetable`, `/studio/library`, `/studio/settings` (notifications + subscription status).
+- **Timetable** — Import, weekly grid, prep/rest nudges; optional **SendGrid**.
+- **Auth** — Optional gate (`APP_ACCESS_CODE`), API keys, or **Clerk** (`CLERK_ONLY_AUTH`) with subscription hooks.
+- **Trust & safety** — Supervisor route for risk scan; configurable reply footer.
+- **Built-in agent tools** — Workspace file read, optional code runner, email/Slack helpers (see `.env.example`) plus MCP tools.
 
-## Prerequisites
+---
 
-- Python 3.11+ (recommended).
-- [Redis](https://redis.io/) if you enable the MCP `EventStore` with `RedisStore`.
-- An LLM API key (e.g. OpenAI or provider supported by your LangChain stack).
+## Quick start
 
-## Suggested layout
+### Backend
+
+```bash
+git clone <this-repo>
+cd fastapi-langgraph-mcp-agent
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -U pip && pip install -e .
+cp .env.example .env   # set OPENAI_API_KEY, paths, optional Clerk / CORS
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+- **Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Health**: `GET /health` · `GET /health/deps`
+
+### Frontend (Next.js)
+
+```bash
+cd frontend
+cp .env.local.example .env.local   # NEXT_PUBLIC_API_URL, optional Clerk keys
+npm install && npm run dev
+```
+
+Or from repo root: `make install-web` then `make dev-api` + `make dev-web` (see **Makefile**).
+
+**Split domains (e.g. `study.*` + `coach.*`)**  
+Set **`STUDY_COACH_FRONTEND_URL`** to the browser origin. If **`CORS_ORIGINS`** is empty, the API allows that origin automatically. Otherwise list origins explicitly and see `.env.example`.
+
+---
+
+## Repository layout
 
 ```text
 fastapi-langgraph-mcp-agent/
-├── Makefile                # dev-api, dev-web, check
-├── README.md
-├── pyproject.toml
-├── .env.example
 ├── app/
-│   ├── main.py             # App factory: middleware, mounts, include_router
-│   ├── routers/            # Route modules (site, health, workflow, webhooks)
-│   ├── schemas.py          # Pydantic API models
-│   ├── workflow_ops.py     # LangGraph invoke, history, uploads, SSE
-│   ├── limiting.py         # SlowAPI limiter
-│   ├── lifespan.py         # SQLite checkpointer startup
-│   ├── mcp_http.py         # Mounted FastMCP app
-│   ├── static/             # Access gate HTML only (APP_ACCESS_CODE); marketing/chat live in frontend/
-│   ├── mcp_server/server.py
-│   └── workflows/graph.py
-└── frontend/               # Next.js 15 (home, assessment, /studio)
+│   ├── main.py              # App factory: middleware, MCP mount, routers
+│   ├── routers/             # site, health, workflow, timetable, account, webhooks
+│   ├── workflows/           # LangGraph compile, supervisor, team router, builtins
+│   ├── mcp_http.py          # FastMCP mount under /agent
+│   └── mcp_server/          # MCP tools & prompts
+├── frontend/                # Next.js 15 App Router
+├── tests/
+├── Dockerfile
+├── DEPLOY.md
+├── pyproject.toml
+└── .env.example
 ```
 
-## Next.js frontend (optional)
-
-The **`frontend/`** directory is a **Next.js 15** app (App Router): landing page, multi-step **assessment**, and **`/studio`** workspace (dashboard + coach) that calls the same **`POST /workflow`**, **`POST /workflow/upload`**, and **`GET /workflow/history`** endpoints as the API.
-
-1. Run the API (e.g. on **http://127.0.0.1:8000**).
-2. Copy **`frontend/.env.local.example`** to **`frontend/.env.local`** and set **`NEXT_PUBLIC_API_URL`**.
-3. From **`frontend/`**, run **`npm install`** then **`npm run dev`** (default **http://localhost:3000**).
-4. Add that origin to FastAPI **`CORS_ORIGINS`**. If the API uses **`CLERK_ONLY_AUTH`**, set **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** and **`CLERK_SECRET_KEY`** in **`.env.local`** and match **`CLERK_AUTHORIZED_PARTIES`** / Clerk dashboard URLs on the backend.
-
-Set **`STUDY_COACH_FRONTEND_URL`** (e.g. `http://127.0.0.1:3000`) on the API so **`GET /`**, **`/assessment`**, and **`/chat`** redirect to the Next app (`/` and `/assessment` as-is, **`/chat` → `/studio/chat`**). Without it, those routes return a short HTML stub pointing at **`frontend/`**.
-
-**Local dev (two terminals):** `make dev-api` and `make dev-web` (after `make install-web` and a configured **`.env`** / **`frontend/.env.local`**).
-
-**Production:** deploy **`frontend/`** to Vercel (root directory `frontend`, set **`NEXT_PUBLIC_API_URL`** to your public API). Run the FastAPI app from the root **`Dockerfile`** on a host with a **persistent volume** for `/data` (SQLite) and **`SESSION_COOKIE_SECURE=true`**. Full steps: **[DEPLOY.md](DEPLOY.md)**.
-
-**Studio UI:** **`/studio`** — dashboard with personalised starters, **`/studio/chat`** coach, **`/studio/timetable`** (**import** PDF / DOCX / images via **`POST /timetable/import`** with **`OPENAI_API_KEY`**; internal reference grid PNG aligns parsing; schedule shows in a **week calendar** beside **`/studio/chat`** only; **goals** for nudges sync from the **assessment** profile; prep/rest/focus nudges + optional **SendGrid**), **`/studio/library`** prompts (Study Coach dark/gold styling). Protected by Clerk when **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** is set. Brand logo for emails: **`frontend/public/images/landing/kifinal.png`** (inline in HTML). Marketing images ship under **`frontend/public/images/landing/`**.
-
-**If the UI breaks** (buttons dead, console **404** on `/_next/static/chunks/main-app.js` or **`app-pages-internals.js`**): stop the dev server, run **`npm run clean`** in **`frontend/`**, then **`npm run dev`** again. That usually means **`frontend/.next`** mixed a **`next build`** output with **`next dev`** or a stale cache.
+---
 
 ## Configuration
 
-| Variable | Purpose |
-|----------|---------|
-| `STUDY_COACH_FRONTEND_URL` | Next.js base URL for redirects from `/`, `/assessment`, legacy `/chat`, and post-gate flows. |
-| `OPENAI_API_KEY` | LLM calls (example provider). |
-| `REDIS_URL` | e.g. `redis://localhost:6379` for MCP event store. |
-| `SESSION_SECRET` | Signs session cookies (use a long random value when using `/gate`). |
-| `SESSION_COOKIE_SECURE` | If `true`, session cookies are HTTPS-only (use in production). |
-| `APP_ACCESS_CODE` | If non-empty, enables gate + requires session or `X-App-Access-Code`. |
-| `BIND_THREADS_TO_SESSION` | If `true`, locks each `thread_id` to the first browser session (see `.env.example`). |
-| `THREAD_REGISTRY_DB_PATH` | SQLite file for thread ownership when bind is on. |
-| `WORKFLOW_REQUESTS_PER_MINUTE` | Rate limit for `/workflow`, `/workflow/history`, `/workflow/stream`. |
-| Host / port | Default development: `http://localhost:8000`. |
+Copy **`.env.example`** → **`.env`**. Highlights:
 
-Copy `.env.example` to `.env` and fill values. Never commit secrets.
+| Variable | Role |
+|:--|:--|
+| `OPENAI_API_KEY` | LLM calls |
+| `PUBLIC_BASE_URL` | Canonical API URL (MCP client default) |
+| `STUDY_COACH_FRONTEND_URL` | Next.js base URL; redirects & CORS helper |
+| `CORS_ORIGINS` | Browser origins (optional if frontend URL set — see `.env.example`) |
+| `CHECKPOINT_BACKEND` / `CHECKPOINT_SQLITE_PATH` | `sqlite` (default) or `memory` |
+| `CLERK_*` | Session JWT, webhooks, optional subscription enforcement |
+| `SESSION_SECRET` | Cookie signing when using `/gate` |
 
-**Health**: **`GET /health`** liveness; **`GET /health/deps`** checks OpenAI config, checkpointer, and MCP HTTP reachability.
+Never commit real secrets.
 
-## Install
+---
 
-```bash
-cd fastapi-langgraph-mcp-agent
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -U pip
-# pip install -e .   # if using pyproject.toml
-# or: pip install -r requirements.txt
-```
+## API essentials
 
-Dependencies (conceptual — pin versions in your lockfile):
-
-- `fastapi`, `uvicorn[standard]`
-- `langgraph`, `langchain-core`, `langchain-openai` (or your LLM package)
-- `langchain-mcp-adapters` (`MultiServerMCPClient`, session helpers)
-- `fastmcp`, `httpx`
-- `wikipedia` (or replace with HTTP/API tools)
-- Redis client / `key-value` store package as used by your FastMCP event store setup
-
-## Run locally
-
-1. Start Redis (if using event store):
-
-   ```bash
-   redis-server
-   ```
-
-2. Start the API (example):
-
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-3. MCP is typically mounted under the same app (e.g. `/agent`); the MCP HTTP URL must match what `MultiServerMCPClient` uses (e.g. `http://localhost:8000/agent/mcp`).
-
-4. Open the API: **landing** [http://localhost:8000/](http://localhost:8000/), **gate** [http://localhost:8000/gate](http://localhost:8000/gate) (when access code is set), **assessment** [http://localhost:8000/assessment](http://localhost:8000/assessment), legacy **chat** [http://localhost:8000/chat](http://localhost:8000/chat) — or use **Next.js** at [http://localhost:3000/studio](http://localhost:3000/studio); Swagger at `/docs`, JSON at `/service`.
-
-## API usage
-
-Example workflow invocation:
-
-When **`APP_ACCESS_CODE`** is set, add `-H "X-App-Access-Code: …"` to the request.
+**Workflow (JSON)**
 
 ```bash
-curl -s -X POST "http://localhost:8000/workflow" \
+curl -s -X POST "$API/workflow" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <clerk-session-jwt>"   # when CLERK_ONLY_AUTH
   -d '{"message": "What is the capital of Ghana?"}'
 ```
 
-Optional: **`learner_profile`** (first turn of a new `thread_id` only) personalises the coach — same shape as the browser assessment stores. Omit `thread_id` to start a fresh learning thread. Add **`"coaching_mode": "hints"`** for shorter hints.
+**Streaming** — `POST /workflow/stream` (SSE): `token` events, then `done` with full `reply` and `thread_id`.
 
-```bash
-curl -s -X POST "http://localhost:8000/workflow" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "I need a two-week revision plan.", "learner_profile": {"education_level": "shs", "shs_track": "science", "subject_focus": "Mathematics", "region": "Greater Accra", "goals": "WASSCE Core Math"}}'
-```
+**History** — `GET /workflow/history?thread_id=...`
 
-**Streaming** (`text/event-stream`): same JSON body as `POST /workflow` on **`POST /workflow/stream`**. Events: `token` (partial assistant text), optional trailing `token`(s) for the verification footer, `done` (`thread_id`, `agent_lane`, **`reply`** = full text including footer), `error`.
+**Account** — `GET /account/subscription` (auth same as workflow)
+
+When **`APP_ACCESS_CODE`** is set, send **`X-App-Access-Code`** (or use `/gate` session).
+
+---
 
 ## MCP tools (examples)
 
 | Tool | Role |
-|------|------|
-| `global_news` | Wikipedia summary for a query. |
-| `get_countries_details` | REST Countries by name. |
-| `get_currency` | REST Countries by currency code. |
+|:--|:--|
+| Wikipedia / news helpers | Factual lookups (see `app/mcp_server`) |
+| REST Countries | Geography / currency helpers |
 
-Extend by registering new `@mcp.tool` functions; LangGraph picks them up via MCP for the session.
+Register more tools with FastMCP; LangGraph consumes them via **`MultiServerMCPClient`**.
 
-## MCP prompts
+---
 
-Define prompts with `@mcp.prompt` (e.g. `common_prompt`) and load them in the graph builder with `load_mcp_prompt` so product teams can iterate prompts without redeploying graph code (depending on your deployment model).
+## LangGraph notes
 
-## LangGraph behavior
+- **Supervisor** — Optional user-risk scan before the coach (`WORKFLOW_SUPERVISOR_ENABLED`).
+- **Team router** — Optional researcher / writer / reviewer subgraphs (`WORKFLOW_TEAM_ROUTER_ENABLED`).
+- **Checkpointer** — Pass `configurable.thread_id` for conversation-scoped memory.
 
-1. **chat node** — LLM with bound tools decides the next step.
-2. **tool node** — `ToolNode` executes MCP-backed tools.
-3. **Conditional edge** — if tools are needed, run tools and return to chat; else **END**.
+---
 
-Compile with a checkpointer (e.g. `MemorySaver()` for development; Postgres/SQLite checkpointers for production) and pass `configurable.thread_id` for conversation-scoped memory.
+## Production
 
-## Production considerations
+- **Deploy**: see **[DEPLOY.md](./DEPLOY.md)** — persistent volume for SQLite, `SESSION_COOKIE_SECURE=true` behind TLS.
+- **Clerk production** — Use **`pk_live_` / `sk_live_`** and match **`CLERK_JWT_ISSUER`** + **`CLERK_AUTHORIZED_PARTIES`** to real UI origins.
+- **Limits** — `WORKFLOW_REQUESTS_PER_MINUTE`, optional Redis for MCP event store (`REDIS_URL`).
 
-- This template adds optional **gate** + **`X-App-Access-Code`** and **slowapi** limits on workflow routes; tighten further (API keys, JWT, mTLS) as needed.
-- **Payload size limits** on FastAPI beyond the default.
-- **Secrets** via env or a secret manager; never in MCP prompts committed to git.
-- **Observability**: structured logs, tracing around MCP and LangGraph steps.
-- **Redis** sizing and TTL (`ttl`, `max_events_per_stream`) for MCP event store.
-- **LLM timeouts/retries** and cost controls.
+---
+
+## Troubleshooting
+
+| Symptom | Check |
+|:--|:--|
+| CORS errors from Vercel / custom domain | `CORS_ORIGINS` or `STUDY_COACH_FRONTEND_URL`; redeploy API after env changes |
+| 401 on `/timetable` / `/workflow` | Clerk token, `CLERK_AUTHORIZED_PARTIES` includes exact `https://` origin |
+| Next.js 404 on `/_next/static/...` | `cd frontend && npm run clean && npm run dev` |
+
+---
 
 ## References
 
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [LangGraph](https://langchain-ai.github.io/langgraph/)
-- [LangChain MCP adapters](https://github.com/langchain-ai/langchain-mcp-adapters)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
+| Resource | Link |
+|:--|:--|
+| FastAPI | [fastapi.tiangolo.com](https://fastapi.tiangolo.com/) |
+| LangGraph | [langchain-ai.github.io/langgraph](https://langchain-ai.github.io/langgraph/) |
+| MCP | [modelcontextprotocol.io](https://modelcontextprotocol.io/) |
+| MCP adapters | [langchain-ai/langchain-mcp-adapters](https://github.com/langchain-ai/langchain-mcp-adapters) |
+
+---
+
+<div align="center">
+
+<sub>Built for learners · Respectful of teachers · Verify critical facts with official sources</sub>
+
+<br/><br/>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:2d5f49,100:0f1411&height=80&section=footer&fontSize=24&fontColor=8c9a90&animation=twinkling" alt="" width="100%"/>
+
+</div>
 
 ## License
 
