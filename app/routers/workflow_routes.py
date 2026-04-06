@@ -192,7 +192,7 @@ async def workflow_learning_feedback(
     response: Response,
     body: LearningFeedbackRequest,
 ) -> LearningFeedbackResponse:
-    """Thompson bandit reward for the last coach reply in this thread (adaptive learning)."""
+    """Record a bandit reward for the last coach turn in ``thread_id``."""
     settings = get_settings()
     owner_sid = verify_app_access(request, settings)
     ensure_clerk_subscription(request, settings, owner_sid)

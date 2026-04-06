@@ -1,8 +1,4 @@
-"""Truthfulness guardrails: system-prompt enforcement and optional user-facing verification footer.
-
-This does not run external fact-checkers; it tightens model instructions and surfaces a verification
-reminder on API responses. Suspicious patterns are optionally logged for monitoring.
-"""
+"""Truthfulness guardrails: extra model instructions, optional reply footer, heuristic logging."""
 
 from __future__ import annotations
 
@@ -12,13 +8,13 @@ from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
-# --- Injected after MCP coach prompt (model-facing) -------------------------------------------
+# Model-facing strings concatenated after the MCP system prompt.
 
 TIMETABLE_COACH_SYSTEM_HINT = """
-**Timetable-aware coaching** — Some user messages include a labelled block with the learner's **saved weekly class timetable**
-(recurring slots from the app). Use it to personalize **study plans**, **revision spacing**, **exam preparation pacing**,
-and **workload balance**. Treat any **“heuristic workload”** lines as simple counts and day summaries—not statistical predictions,
-grade forecasts, or official calendars. Never invent exam dates or institution rules; remind learners to verify with their school.
+**Timetable-aware coaching** — Some turns include a labelled block with the learner's **saved weekly class timetable**
+(from this app). Use it to shape **study plans**, **revision spacing**, **exam prep pacing**, and **workload balance**.
+Treat **“heuristic workload”** lines as rough counts and day summaries—not predictions, grade forecasts, or official calendars.
+Do not invent exam dates or school rules; tell the learner to confirm with their school or WAEC as appropriate.
 """
 
 TRUTHFULNESS_SYSTEM_ADDENDUM = """
@@ -37,7 +33,7 @@ TRUTHFULNESS_SYSTEM_ADDENDUM = """
 6. **Safety** — Do not present rumours, forwarded-message claims, or unverified “official” announcements as fact. Point to **.gov.gh**, **.edu.gh**, **WAEC**, **GES/NaCCA**, or **GTEC** for verification.
 """
 
-# --- Appended to assistant text returned to clients (user-facing) -----------------------------
+# Appended to assistant text returned from the API (when enabled in Settings).
 
 DEFAULT_VERIFICATION_FOOTER = (
     "\n\n---\n"
@@ -76,7 +72,7 @@ def augment_assistant_reply(text: str, settings: Settings) -> str:
     return base + footer
 
 
-# --- Lightweight risk signals (logging only) --------------------------------------------------
+# Heuristic patterns for optional INFO logs on assistant replies.
 
 _NUMERIC_CUTOFF_PATTERNS = (
     re.compile(
@@ -107,7 +103,7 @@ def log_if_suspicious_reply(text: str, settings: Settings) -> None:
         )
 
 
-# --- User-turn risk (supervisor / safety officer routes before main coach) --------------------
+# Inbound user message heuristics (supervisor routes before the main coach).
 
 _USER_RISK_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (

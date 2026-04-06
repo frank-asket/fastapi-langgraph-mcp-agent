@@ -513,12 +513,12 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                     </button>
                     </div>
                     <span className="text-[0.6rem] text-[#6a756d] sm:text-[0.65rem]">
-                      Thumbs tune adaptive coaching (bandit). Email uses your address in Account → Notification
+                      Thumbs adjust coaching style (contextual bandit). Email uses the address in Account → Notification
                       settings.
                     </span>
                     {feedbackDone?.i === i ? (
                       <span className="text-[0.65rem] text-emerald-200/80">
-                        Thanks — your next reply will use what we learned.
+                        Noted — later replies in this thread will weight that signal.
                       </span>
                     ) : null}
                   </div>

@@ -1,4 +1,4 @@
-"""Contextual bandit (Thompson sampling) to pick a pedagogy arm; maps to coach message prefixes."""
+"""Thompson sampling over pedagogy arms; prefixes merged into the user message."""
 
 from __future__ import annotations
 

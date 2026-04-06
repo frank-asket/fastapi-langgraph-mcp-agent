@@ -1,4 +1,4 @@
-"""SQLite persistence for contextual bandit (Thompson) over pedagogy arms."""
+"""SQLite: per-learner bandit counts and last arm per thread."""
 
 from __future__ import annotations
 

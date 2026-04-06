@@ -21,7 +21,7 @@ from app.workflows.supervisor import build_supervisor_graph
 
 logger = logging.getLogger(__name__)
 
-# Bump when MCP tool names, trust-safety prompt, or graph wiring change so workers rebuild the compiled graph.
+# Increment to drop cached compiled graphs when MCP tools/prompts or this module's wiring changes.
 MCP_TOOLSET_VERSION = 9
 
 _graphs: dict[str, CompiledStateGraph] = {}

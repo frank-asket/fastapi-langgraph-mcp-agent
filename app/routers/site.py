@@ -1,8 +1,4 @@
-"""Browser redirects to Next.js, access gate, and service map.
-
-Legacy marketing/assessment/chat HTML lived under ``app/static``; those pages are served
-by the Next.js app. Only ``static/gate.html`` remains for APP_ACCESS_CODE cookie sessions.
-"""
+"""Next.js redirects, access gate (gate.html), and ``GET /service`` discovery."""
 
 from typing import Any
 from uuid import uuid4

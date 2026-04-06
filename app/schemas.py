@@ -29,7 +29,7 @@ class LearnerProfile(BaseModel):
 
 
 class LearningFeedback(BaseModel):
-    """Reward signal for the contextual bandit (previous assistant turn in this thread)."""
+    """Bandit reward for the prior assistant turn (same ``thread_id``)."""
 
     signal: Literal["helpful", "not_helpful"]
 
@@ -48,7 +48,7 @@ class WorkflowRequest(BaseModel):
     )
     learning_feedback: LearningFeedback | None = Field(
         default=None,
-        description="Optional: reward last coach reply in this thread before processing the new message.",
+        description="Optional bandit reward for the prior assistant message before this turn.",
     )
 
 
@@ -58,7 +58,7 @@ class WorkflowResponse(BaseModel):
     agent_lane: str = Field(description="Resolved specialist lane for this turn.")
     pedagogy_arm: str | None = Field(
         default=None,
-        description="Bandit-chosen pedagogy arm when adaptive learning is enabled (hints|scaffold|…).",
+        description="Pedagogy arm chosen by the adaptive bandit when that feature is on (e.g. hints, scaffold).",
     )
 
 
@@ -68,7 +68,7 @@ class LearningFeedbackRequest(BaseModel):
 
 
 class LearningFeedbackResponse(BaseModel):
-    updated: bool = Field(description="True if a prior pedagogy arm was found and updated.")
+    updated: bool = Field(description="Whether a stored arm was found and the bandit counts were updated.")
 
 
 class HistoryMessage(BaseModel):

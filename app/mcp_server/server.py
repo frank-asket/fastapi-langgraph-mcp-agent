@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 mcp = FastMCP("Ghana education & digital literacy MCP")
 
-# --- Ghana education reference (high level; policies change—learners must verify) ----
+# Ghana education overview strings (verify against live official sources).
 
 GHANA_EDUCATION_SECTIONS: dict[str, str] = {
     "pathways": """**Ghana education pathways (overview)**
@@ -215,8 +215,7 @@ Not substitutes for **WAEC** rules or timetables:
 *Use **GTEC** + each institution’s **official .edu.gh** site; never pay random “clearing agents.”*""",
 }
 
-# Seed index for tool-first syllabus-shaped answers (extend/replace with NaCCA-aligned corpora later).
-# Each row carries a stable source_mcp_id for coach citations.
+# Stub curriculum rows for curriculum_topic_lookup (extend with NaCCA-aligned data as needed).
 _CURRICULUM_TOPIC_SEED: dict[str, dict[str, list[dict[str, str]]]] = {
     "jhs": {
         "mathematics": [
@@ -608,7 +607,7 @@ def digital_literacy_lesson(topic: str) -> str:
     return ALL_DIGITAL_TOPICS[key]
 
 
-# Shared tail for lane-specific coaches (multi-agent MCP prompts).
+# Appended to every lane-specific MCP coach prompt.
 _COACH_SHARED = """**Curriculum & admissions**
 - Ground explanations in **Ghana’s context** (GES, NaCCA frameworks at a high level, **BECE**, **WASSCE**, SHS programmes, TVET).
 - **Policies, aggregates, cut-offs, and fees change every year.** Never invent numbers. Tell students to verify with **their school**, **WAEC Ghana**, **NaCCA/GES circulars**, and the **specific institution’s admissions page**.

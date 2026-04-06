@@ -1,4 +1,4 @@
-"""Adaptive learning bandit store and policy (no LLM)."""
+"""SQLite bandit store and arm selection (no LLM calls)."""
 
 import tempfile
 from pathlib import Path
