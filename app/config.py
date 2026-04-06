@@ -190,13 +190,16 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         """Origins allowed for browser CORS.
 
-        When ``cors_origins`` is empty or whitespace-only: if ``study_coach_frontend_url`` is set, returns that
-        origin alone so split API/UI deploys (e.g. coach.… API + study.… Next.js) get CORS without duplicating
-        the host in ``CORS_ORIGINS``. If the frontend URL is also unset, returns ``[]`` and main.py skips
-        CORSMiddleware.
+        When ``cors_origins`` is empty or whitespace-only: merges ``study_coach_frontend_url`` (if set) and every
+        ``http(s)://`` origin listed in ``CLERK_AUTHORIZED_PARTIES``. If none of those apply, returns ``[]`` and
+        main.py skips CORSMiddleware.
 
         When ``cors_origins`` is non-empty, parses the comma-separated list and merges ``study_coach_frontend_url``
         (if set) so the canonical UI origin is allowed without duplicating it in ``CORS_ORIGINS``.
+
+        **Clerk:** every ``http(s)://`` entry in ``CLERK_AUTHORIZED_PARTIES`` is also merged into this list so
+        production setups that set parties for ``azp`` but omit ``CORS_ORIGINS`` still allow the browser origin
+        (e.g. ``https://study.…`` calling ``https://coach.…``).
         """
         raw = (self.cors_origins or "").strip()
         out: list[str] = []
@@ -212,17 +215,24 @@ class Settings(BaseSettings):
             seen_lower.add(k)
             out.append(o)
 
+        def add_clerk_party_origins() -> None:
+            for p in sorted(self.clerk_authorized_parties_set):
+                if p.startswith("http://") or p.startswith("https://"):
+                    add(p)
+
         if not raw:
             front = self.study_coach_frontend_base
             if front:
-                return [front]
-            return []
+                add(front)
+            add_clerk_party_origins()
+            return out
 
         for part in raw.split(","):
             add(part)
         front = self.study_coach_frontend_base
         if front:
             add(front)
+        add_clerk_party_origins()
         return out
 
     @property
