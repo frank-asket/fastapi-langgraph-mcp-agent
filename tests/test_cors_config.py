@@ -6,18 +6,22 @@ from app.config import Settings
 
 
 class CorsOriginListTests(TestCase):
-    def test_empty_cors_origins_returns_empty_despite_frontend_url(self) -> None:
+    def test_empty_cors_origins_uses_study_coach_frontend_url(self) -> None:
         s = Settings(
             cors_origins="",
             study_coach_frontend_url="https://study.example.com",
         )
-        self.assertEqual(s.cors_origin_list, [])
+        self.assertEqual(s.cors_origin_list, ["https://study.example.com"])
 
-    def test_whitespace_only_cors_origins_returns_empty_despite_frontend_url(self) -> None:
+    def test_whitespace_only_cors_origins_uses_study_coach_frontend_url(self) -> None:
         s = Settings(
             cors_origins="  \t\n  ",
             study_coach_frontend_url="https://study.example.com",
         )
+        self.assertEqual(s.cors_origin_list, ["https://study.example.com"])
+
+    def test_empty_cors_and_no_frontend_url_disables_cors(self) -> None:
+        s = Settings(cors_origins="", study_coach_frontend_url=None)
         self.assertEqual(s.cors_origin_list, [])
 
     def test_non_empty_cors_merges_study_coach_frontend_url(self) -> None:

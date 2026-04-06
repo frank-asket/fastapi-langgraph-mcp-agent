@@ -185,17 +185,15 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         """Origins allowed for browser CORS.
 
-        If ``cors_origins`` is empty (e.g. ``CORS_ORIGINS=`` in env), returns ``[]`` so main.py skips
-        CORSMiddleware entirely—same as documented “disable CORS” behaviour. ``study_coach_frontend_url`` is
-        **not** appended in that case.
+        When ``cors_origins`` is empty or whitespace-only: if ``study_coach_frontend_url`` is set, returns that
+        origin alone so split API/UI deploys (e.g. coach.… API + study.… Next.js) get CORS without duplicating
+        the host in ``CORS_ORIGINS``. If the frontend URL is also unset, returns ``[]`` and main.py skips
+        CORSMiddleware.
 
         When ``cors_origins`` is non-empty, parses the comma-separated list and merges ``study_coach_frontend_url``
         (if set) so the canonical UI origin is allowed without duplicating it in ``CORS_ORIGINS``.
         """
         raw = (self.cors_origins or "").strip()
-        if not raw:
-            return []
-
         out: list[str] = []
         seen_lower: set[str] = set()
 
@@ -208,6 +206,12 @@ class Settings(BaseSettings):
                 return
             seen_lower.add(k)
             out.append(o)
+
+        if not raw:
+            front = self.study_coach_frontend_base
+            if front:
+                return [front]
+            return []
 
         for part in raw.split(","):
             add(part)
