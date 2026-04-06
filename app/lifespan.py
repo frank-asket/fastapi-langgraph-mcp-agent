@@ -27,6 +27,16 @@ async def _timetable_tick_loop() -> None:
         await asyncio.sleep(60)
 
 
+async def _cancel_tick_task(task: asyncio.Task | None) -> None:
+    if task is None:
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
 @asynccontextmanager
 async def core_lifespan(app: FastAPI):
     settings = get_settings()
@@ -44,38 +54,27 @@ async def core_lifespan(app: FastAPI):
         logger.warning("CLERK_PUBLISHABLE_KEY is set but CLERK_JWT_ISSUER / JWKS is missing — backend cannot verify session tokens.")
 
     tick_task: asyncio.Task | None = None
-    if settings.timetable_notifications_enabled:
-        tick_task = asyncio.create_task(_timetable_tick_loop())
-        logger.info("Timetable notification scheduler (60s tick): enabled")
-
-    if backend == "memory":
-        app.state.checkpointer = MemorySaver()
-        logger.warning(
-            "LangGraph checkpoint_backend=memory (MemorySaver): threads are NOT persisted across API restarts.",
-        )
-        try:
+    try:
+        if backend == "memory":
+            app.state.checkpointer = MemorySaver()
+            logger.warning(
+                "LangGraph checkpoint_backend=memory (MemorySaver): threads are NOT persisted across API restarts.",
+            )
+            if settings.timetable_notifications_enabled:
+                tick_task = asyncio.create_task(_timetable_tick_loop())
+                logger.info("Timetable notification scheduler (60s tick): enabled")
             yield
-        finally:
-            if tick_task:
-                tick_task.cancel()
-                try:
-                    await tick_task
-                except asyncio.CancelledError:
-                    pass
-        return
+            return
 
-    db_path = Path(settings.checkpoint_sqlite_path).expanduser()
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn_str = str(db_path.resolve())
-    async with AsyncSqliteSaver.from_conn_string(conn_str) as saver:
-        app.state.checkpointer = saver
-        logger.info("LangGraph thread memory (SQLite): %s", conn_str)
-        try:
+        db_path = Path(settings.checkpoint_sqlite_path).expanduser()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn_str = str(db_path.resolve())
+        async with AsyncSqliteSaver.from_conn_string(conn_str) as saver:
+            app.state.checkpointer = saver
+            logger.info("LangGraph thread memory (SQLite): %s", conn_str)
+            if settings.timetable_notifications_enabled:
+                tick_task = asyncio.create_task(_timetable_tick_loop())
+                logger.info("Timetable notification scheduler (60s tick): enabled")
             yield
-        finally:
-            if tick_task:
-                tick_task.cancel()
-                try:
-                    await tick_task
-                except asyncio.CancelledError:
-                    pass
+    finally:
+        await _cancel_tick_task(tick_task)
