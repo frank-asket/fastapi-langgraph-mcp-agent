@@ -23,7 +23,9 @@ class Settings(BaseSettings):
 
     redis_url: str | None = None
 
-    #: LangGraph checkpoint DB (conversation history per thread_id). Survives server restarts.
+    #: LangGraph checkpoints: ``sqlite`` (durable) or ``memory`` (MemorySaver; lost on process restart).
+    checkpoint_backend: str = Field(default="sqlite")
+    #: LangGraph checkpoint DB when ``checkpoint_backend=sqlite`` (conversation history per thread_id).
     checkpoint_sqlite_path: str = Field(default="data/langgraph_checkpoints.db")
 
     #: Signed cookie secret (required for sessions). Change in production.
@@ -49,6 +51,8 @@ class Settings(BaseSettings):
     workflow_timetable_context_enabled: bool = Field(default=True)
     #: When True, wrap the MCP ReAct coach in a supervisor graph (user-risk scan → safety reply or coach).
     workflow_supervisor_enabled: bool = Field(default=True)
+    #: When True (and supervisor on), an orchestrator routes each safe turn to researcher / writer / reviewer / coach ReAct subgraphs.
+    workflow_team_router_enabled: bool = Field(default=False)
     #: Contextual bandit (Thompson) over pedagogy arms; persists in adaptive_learning_db_path.
     adaptive_learning_enabled: bool = Field(default=True)
     adaptive_learning_db_path: str = Field(default="data/adaptive_learning.db")
@@ -95,6 +99,17 @@ class Settings(BaseSettings):
 
     #: Max characters kept from extracted document text (then sent to the model).
     max_attachment_extract_chars: int = Field(default=80_000, ge=2_000, le=500_000)
+
+    #: Attach LangChain ``@tool`` builtins alongside MCP tools (workspace file read, optional code runner, email, Slack).
+    builtin_tools_enabled: bool = Field(default=True)
+    #: Directory for ``read_workspace_file`` (relative paths only; must stay under this root after resolve).
+    builtin_tools_workspace_path: str = Field(default="data/agent_workspace")
+    builtin_max_file_read_bytes: int = Field(default=524_288, ge=1024, le=8_388_608)
+    #: Dangerous: runs ``python -c`` on the server. Keep off in production unless sandboxed.
+    builtin_code_runner_enabled: bool = Field(default=False)
+    builtin_code_runner_timeout_s: int = Field(default=5, ge=1, le=30)
+    #: Slack incoming webhook URL for ``post_slack_message`` tool (optional).
+    slack_incoming_webhook_url: str | None = None
 
     # --- Trust & safety (truthfulness guardrails; not a substitute for fact-checking APIs) ---
     #: Append strong anti-hallucination instructions after the MCP coach system prompt.

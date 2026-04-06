@@ -24,6 +24,7 @@ async def health_deps(request: Request) -> dict[str, Any]:
     settings = get_settings()
     checks: dict[str, Any] = {
         "openai_configured": bool(settings.openai_api_key),
+        "checkpoint_backend": (settings.checkpoint_backend or "sqlite").strip().lower(),
         "checkpointer_ready": getattr(request.app.state, "checkpointer", None) is not None,
         "auth_enabled": settings.auth_enabled,
         "clerk_jwt_configured": settings.clerk_jwt_configured,

@@ -17,12 +17,19 @@ from langgraph.prebuilt import create_react_agent
 from app.agent_lanes import DEFAULT_AGENT_LANE, MCP_PROMPT_BY_LANE, VALID_AGENT_LANES
 from app.config import Settings
 from app.trust_safety import augment_system_prompt
+from app.workflows.builtin_tools import build_builtin_tools
 from app.workflows.supervisor import build_supervisor_graph
+from app.workflows.team_router import (
+    RESEARCH_SUFFIX,
+    REVIEW_SUFFIX,
+    WRITE_SUFFIX,
+    build_team_supervisor_graph,
+)
 
 logger = logging.getLogger(__name__)
 
 # Increment to drop cached compiled graphs when MCP tools/prompts or this module's wiring changes.
-MCP_TOOLSET_VERSION = 9
+MCP_TOOLSET_VERSION = 10
 
 _graphs: dict[str, CompiledStateGraph] = {}
 _graph_cache_version: int | None = None
@@ -107,6 +114,14 @@ def _normalize_lane(lane: str) -> str:
     return DEFAULT_AGENT_LANE
 
 
+def _graph_cache_slot(lane: str, settings: Settings) -> str:
+    if settings.workflow_supervisor_enabled and settings.workflow_team_router_enabled:
+        return f"{lane}::team"
+    if settings.workflow_supervisor_enabled:
+        return f"{lane}::sup"
+    return f"{lane}::react"
+
+
 async def get_workflow_graph(
     settings: Settings,
     checkpointer: BaseCheckpointSaver,
@@ -115,12 +130,13 @@ async def get_workflow_graph(
     """Lazily build compiled graph per specialist lane (shared tools, different MCP system prompt)."""
     global _graphs, _graph_cache_version
     lane = _normalize_lane(agent_lane)
+    slot = _graph_cache_slot(lane, settings)
     async with _graph_lock:
         if _graph_cache_version != MCP_TOOLSET_VERSION:
             _graphs = {}
             _graph_cache_version = MCP_TOOLSET_VERSION
 
-        cached = _graphs.get(lane)
+        cached = _graphs.get(slot)
         if cached is not None:
             return cached
 
@@ -139,7 +155,9 @@ async def get_workflow_graph(
                 }
             }
         )
-        tools = await client.get_tools()
+        mcp_tools = await client.get_tools()
+        builtins = build_builtin_tools(settings) if settings.builtin_tools_enabled else []
+        tools = list(builtins) + list(mcp_tools)
         prompt_msgs = await client.get_prompt("agent", prompt_name)
         system_prompt = augment_system_prompt(
             _mcp_prompt_to_system_string(prompt_msgs),
@@ -162,7 +180,40 @@ async def get_workflow_graph(
             checkpointer=None,
             pre_model_hook=pre_model_openai_message_compat,
         )
-        if settings.workflow_supervisor_enabled:
+        use_team = settings.workflow_supervisor_enabled and settings.workflow_team_router_enabled
+        if use_team:
+            researcher = create_react_agent(
+                model,
+                tools,
+                prompt=system_prompt + RESEARCH_SUFFIX,
+                checkpointer=None,
+                pre_model_hook=pre_model_openai_message_compat,
+            )
+            writer = create_react_agent(
+                model,
+                tools,
+                prompt=system_prompt + WRITE_SUFFIX,
+                checkpointer=None,
+                pre_model_hook=pre_model_openai_message_compat,
+            )
+            reviewer = create_react_agent(
+                model,
+                tools,
+                prompt=system_prompt + REVIEW_SUFFIX,
+                checkpointer=None,
+                pre_model_hook=pre_model_openai_message_compat,
+            )
+            compiled = build_team_supervisor_graph(
+                researcher=researcher,
+                writer=writer,
+                reviewer=reviewer,
+                coach=coach_subgraph,
+                orchestrator_model=model,
+            ).compile(checkpointer=checkpointer)
+            setattr(compiled, "stream_subgraphs", True)
+            graph = compiled
+            mode = "supervisor+team"
+        elif settings.workflow_supervisor_enabled:
             compiled = build_supervisor_graph(coach_subgraph).compile(checkpointer=checkpointer)
             setattr(compiled, "stream_subgraphs", True)
             graph = compiled
@@ -177,13 +228,15 @@ async def get_workflow_graph(
             )
             setattr(graph, "stream_subgraphs", False)
             mode = "react"
-        _graphs[lane] = graph
+        _graphs[slot] = graph
         logger.info(
-            "Compiled LangGraph %s lane=%s prompt=%s (%d MCP tools, %s)",
+            "Compiled LangGraph %s lane=%s prompt=%s (%d tools: %d builtin + %d MCP, %s)",
             mode,
             lane,
             prompt_name,
             len(tools),
+            len(builtins),
+            len(mcp_tools),
             settings.resolved_mcp_http_url,
         )
         return graph
