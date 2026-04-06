@@ -192,3 +192,37 @@ class WorkflowThreadMeta(BaseModel):
 
 class WorkflowThreadsResponse(BaseModel):
     threads: list[WorkflowThreadMeta]
+
+
+class SubscriptionStatusResponse(BaseModel):
+    """Clerk subscription gate status for Studio (GET /account/subscription)."""
+
+    enforcement_enabled: bool = Field(description="CLERK_ENFORCE_SUBSCRIPTION")
+    clerk_account: bool = Field(description="Request resolved to a Clerk user id (clerk:…).")
+    access_allowed: bool = Field(
+        description="Whether subscription checks pass (or do not apply). False means workflow/timetable would 403.",
+    )
+    checks_jwt_claim: bool
+    checks_entitlements_database: bool
+    jwt_claim_name: str | None = None
+    jwt_claim_value: str | None = None
+    jwt_in_active_set: bool | None = Field(
+        default=None,
+        description="True if claim value matches CLERK_SUBSCRIPTION_ACTIVE_VALUES; null if JWT claim not used.",
+    )
+    database_subscription_status: str | None = None
+    database_subscription_plan: str | None = None
+    database_updated_at: str | None = None
+    database_in_active_set: bool | None = Field(
+        default=None,
+        description="True if DB status matches active set; null if DB check not used.",
+    )
+    active_subscription_values: list[str] = Field(
+        default_factory=list,
+        description="Server-side values treated as active (from CLERK_SUBSCRIPTION_ACTIVE_VALUES).",
+    )
+    manage_subscription_url: str | None = Field(
+        default=None,
+        description="Optional SUBSCRIPTION_MANAGE_URL for learners to open billing.",
+    )
+    detail: str | None = Field(default=None, description="Short explanation for the learner or operator.")

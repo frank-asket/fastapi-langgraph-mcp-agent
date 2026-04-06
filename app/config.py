@@ -146,6 +146,8 @@ class Settings(BaseSettings):
     clerk_subscription_active_values: str = Field(default="active,trialing")
     #: If True, subscription must also match a row in clerk_entitlements (populated by webhooks).
     clerk_enforce_entitlements_db: bool = Field(default=False)
+    #: Optional URL (Stripe portal, Clerk Billing, etc.) returned on GET /account/subscription for the Studio UI.
+    subscription_manage_url: str | None = None
     #: Browser publishable key (pk_…) for embedded Clerk on the Next.js app.
     clerk_publishable_key: str | None = None
 

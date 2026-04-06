@@ -20,7 +20,7 @@ from app.constants import STATIC_DIR
 from app.lifespan import core_lifespan
 from app.limiting import limiter
 from app.mcp_http import mcp_app
-from app.routers import health, site, timetable_routes, webhooks, workflow_routes
+from app.routers import account_routes, health, site, timetable_routes, webhooks, workflow_routes
 
 app = FastAPI(
     title="Study Coach API — AI tutoring for African education",
@@ -59,6 +59,7 @@ if _cors_origins:
     )
 
 app.include_router(site.router)
+app.include_router(account_routes.router)
 app.include_router(health.router)
 app.include_router(webhooks.router)
 app.include_router(workflow_routes.router)

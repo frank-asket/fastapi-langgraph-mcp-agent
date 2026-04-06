@@ -38,8 +38,10 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, [pathname]);
-  const generalSettingsActive = settingsActive && hash !== "notifications";
   const notificationsSettingsActive = settingsActive && hash === "notifications";
+  const subscriptionSettingsActive = settingsActive && hash === "subscription";
+  const generalSettingsActive =
+    settingsActive && !notificationsSettingsActive && !subscriptionSettingsActive;
 
   const asideClass =
     "flex shrink-0 flex-col border-r border-sc-line bg-sc-elev shadow-[4px_0_24px_rgba(0,0,0,0.2)] " +
@@ -163,6 +165,17 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
               }`}
             >
               ⚙️ Settings
+            </Link>
+            <Link
+              href="/studio/settings#subscription"
+              onClick={closeMobile}
+              className={`block rounded-lg px-2 py-2 text-[0.85rem] font-medium transition ${
+                subscriptionSettingsActive
+                  ? "bg-sc-line text-sc-gold"
+                  : "text-[#9caaa0] hover:bg-sc-line/50 hover:text-sc-mist"
+              }`}
+            >
+              💳 Subscription
             </Link>
             <Link
               href="/studio/settings#notifications"

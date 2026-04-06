@@ -178,43 +178,8 @@ def ensure_clerk_subscription(
     if not settings.clerk_enforce_subscription or not owner_id or not owner_id.startswith("clerk:"):
         return
     claims = getattr(request.state, "clerk_claims", None) or {}
-    allowed = {x.strip() for x in settings.clerk_subscription_active_values.split(",") if x.strip()}
-    claim_name = (settings.clerk_subscription_jwt_claim or "").strip()
-    use_jwt = bool(claim_name)
-    use_db = settings.clerk_enforce_entitlements_db
-    if not use_jwt and not use_db:
-        logger.warning(
-            "CLERK_ENFORCE_SUBSCRIPTION is enabled but neither CLERK_SUBSCRIPTION_JWT_CLAIM "
-            "nor CLERK_ENFORCE_ENTITLEMENTS_DB is set — skipping subscription check.",
-        )
-        return
+    from app.subscription_view import evaluate_enforced_clerk_subscription
 
-    jwt_ok = True
-    if use_jwt:
-        val = claims.get(claim_name)
-        jwt_ok = str(val) in allowed if val is not None else False
-
-    db_ok = True
-    if use_db:
-        from pathlib import Path
-
-        from app.clerk_entitlements import get_entitlement
-
-        uid = owner_id.removeprefix("clerk:")
-        row = get_entitlement(Path(settings.clerk_entitlements_db_path).expanduser().resolve(), uid)
-        st = (row or {}).get("subscription_status")
-        db_ok = str(st) in allowed if st is not None else False
-
-    if use_jwt and use_db:
-        if not (jwt_ok and db_ok):
-            raise HTTPException(
-                status_code=403,
-                detail="An active subscription is required (JWT claim and account record).",
-            )
-    elif use_jwt and not jwt_ok:
-        raise HTTPException(status_code=403, detail="An active subscription is required.")
-    elif use_db and not db_ok:
-        raise HTTPException(
-            status_code=403,
-            detail="An active subscription is required — sync billing with Clerk webhooks.",
-        )
+    ok, detail = evaluate_enforced_clerk_subscription(settings, owner_id, claims)
+    if not ok:
+        raise HTTPException(status_code=403, detail=detail or "An active subscription is required.")

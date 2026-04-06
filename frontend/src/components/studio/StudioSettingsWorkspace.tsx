@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { NotificationSettingsPanel } from "@/components/studio/NotificationSettingsPanel";
+import { SubscriptionSettingsPanel } from "@/components/studio/SubscriptionSettingsPanel";
 import { syncTimetableGoalsFromAssessment } from "@/lib/timetableGoalsSync";
 import {
   emitTimetableChanged,
@@ -137,6 +138,10 @@ function StudioSettingsWorkspaceInner({
             </li>
           </ul>
         </section>
+
+        <div className="mt-6 space-y-6">
+          <SubscriptionSettingsPanel getToken={getToken} hasClerk={Boolean(hasClerkPk)} />
+        </div>
 
         <div id="notifications" className="mt-6 scroll-mt-8 space-y-6">
           {prefs && (
