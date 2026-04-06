@@ -15,6 +15,10 @@ export function workflowUrl(): string {
   return `${getApiUrl()}/workflow`;
 }
 
+export function workflowLearningFeedbackUrl(): string {
+  return `${getApiUrl()}/workflow/learning-feedback`;
+}
+
 export function workflowUploadUrl(): string {
   return `${getApiUrl()}/workflow/upload`;
 }

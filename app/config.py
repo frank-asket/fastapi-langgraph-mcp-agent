@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     workflow_timetable_context_enabled: bool = Field(default=True)
     #: When True, wrap the MCP ReAct coach in a supervisor graph (user-risk scan → safety reply or coach).
     workflow_supervisor_enabled: bool = Field(default=True)
+    #: Contextual bandit (Thompson) over pedagogy arms; persists in adaptive_learning_db_path.
+    adaptive_learning_enabled: bool = Field(default=True)
+    adaptive_learning_db_path: str = Field(default="data/adaptive_learning.db")
     #: Hourly cap per client (Bearer/session/IP) on POST /workflow/email-export.
     coach_email_exports_per_hour: int = Field(default=8, ge=1, le=120)
     #: Max characters for emailed coach message body (after strip).

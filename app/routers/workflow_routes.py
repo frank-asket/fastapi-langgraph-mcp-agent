@@ -18,10 +18,13 @@ from app.limiting import (
     email_export_limit_key,
     limiter,
 )
+from app.adaptive_learning import apply_learning_feedback
 from app.schemas import (
     EmailCoachExportRequest,
     EmailCoachExportResponse,
     HistoryResponse,
+    LearningFeedbackRequest,
+    LearningFeedbackResponse,
     WorkflowRequest,
     WorkflowResponse,
     WorkflowThreadsResponse,
@@ -31,7 +34,9 @@ from app.thread_registry import list_threads_for_owner
 from app.timetable_messaging import send_sendgrid_email
 from app.timetable_store import get_prefs, upsert_prefs
 from app.workflow_ops import (
+    enforce_thread_policy,
     execute_workflow,
+    learner_id_for_adaptive,
     registry_path,
     workflow_history_result,
     workflow_stream_response,
@@ -178,6 +183,31 @@ async def workflow(
     request: Request, response: Response, body: WorkflowRequest
 ) -> WorkflowResponse:
     return await execute_workflow(request, body)
+
+
+@router.post("/workflow/learning-feedback", response_model=LearningFeedbackResponse)
+@limiter.limit(dynamic_workflow_limit)
+async def workflow_learning_feedback(
+    request: Request,
+    response: Response,
+    body: LearningFeedbackRequest,
+) -> LearningFeedbackResponse:
+    """Thompson bandit reward for the last coach reply in this thread (adaptive learning)."""
+    settings = get_settings()
+    owner_sid = verify_app_access(request, settings)
+    ensure_clerk_subscription(request, settings, owner_sid)
+    tid = body.thread_id.strip()
+    if len(tid) < 8:
+        raise HTTPException(status_code=400, detail="thread_id is required.")
+    enforce_thread_policy(settings, tid, owner_sid)
+    learner_id = learner_id_for_adaptive(request, settings, owner_sid)
+    updated = apply_learning_feedback(
+        settings,
+        learner_id,
+        tid,
+        helpful=body.signal == "helpful",
+    )
+    return LearningFeedbackResponse(updated=updated)
 
 
 @router.post("/workflow/upload", response_model=WorkflowResponse)

@@ -86,6 +86,7 @@ async def service_info() -> dict[str, Any]:
         "workflow": "/workflow",
         "workflow_upload": "/workflow/upload",
         "workflow_stream": "/workflow/stream",
+        "workflow_learning_feedback": "/workflow/learning-feedback",
         "workflow_history": "/workflow/history",
         "timetable": "/timetable",
         "timetable_me": "/timetable/me",

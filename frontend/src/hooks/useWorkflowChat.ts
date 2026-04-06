@@ -8,6 +8,7 @@ import {
   workflowThreadsUrl,
   workflowUploadUrl,
   workflowUrl,
+  workflowLearningFeedbackUrl,
 } from "@/lib/api";
 
 function formatWorkflowNetworkError(err: unknown): string {
@@ -358,7 +359,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
         }
 
         const raw = await res.text();
-        let data: { detail?: string | unknown; reply?: string; thread_id?: string };
+        let data: { detail?: string | unknown; reply?: string; thread_id?: string; pedagogy_arm?: string | null };
         try {
           data = JSON.parse(raw) as typeof data;
         } catch {
@@ -430,6 +431,30 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
   }, [threadId]);
 
   /** Email assistant markdown/plain text to the notification address saved under Account / Notification settings. */
+  const submitLearningFeedback = useCallback(
+    async (tid: string, signal: "helpful" | "not_helpful"): Promise<boolean> => {
+      const thread = tid.trim();
+      if (thread.length < 8) return false;
+      const h = await authHeaders();
+      const res = await fetch(workflowLearningFeedbackUrl(), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...h },
+        body: JSON.stringify({ thread_id: thread, signal }),
+      });
+      const raw = await res.text();
+      let data: { detail?: unknown; updated?: boolean };
+      try {
+        data = JSON.parse(raw) as typeof data;
+      } catch {
+        return false;
+      }
+      if (!res.ok) return false;
+      return Boolean(data.updated);
+    },
+    [authHeaders],
+  );
+
   const emailAssistantMessage = useCallback(
     async (messageBody: string): Promise<{ sentTo: string }> => {
       const trimmed = messageBody.trim();
@@ -497,7 +522,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
           signal: abortCtl.signal,
         });
         const raw = await res.text();
-        let data: { detail?: string | unknown; reply?: string; thread_id?: string };
+        let data: { detail?: string | unknown; reply?: string; thread_id?: string; pedagogy_arm?: string | null };
         try {
           data = JSON.parse(raw) as typeof data;
         } catch {
@@ -566,6 +591,7 @@ export function useWorkflowChat(getToken?: GetTokenFn, clerkSessionReady?: boole
     clearProfile,
     copyThreadId,
     emailAssistantMessage,
+    submitLearningFeedback,
     loadHistory,
     readProfile,
     pastThreads,

@@ -1,6 +1,7 @@
 """HTTP API request/response models for Study Coach."""
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -27,6 +28,12 @@ class LearnerProfile(BaseModel):
     goals: str | None = Field(default=None, max_length=4000)
 
 
+class LearningFeedback(BaseModel):
+    """Reward signal for the contextual bandit (previous assistant turn in this thread)."""
+
+    signal: Literal["helpful", "not_helpful"]
+
+
 class WorkflowRequest(BaseModel):
     message: str = Field(..., min_length=1)
     thread_id: str | None = None
@@ -39,12 +46,29 @@ class WorkflowRequest(BaseModel):
         default="auto",
         description="auto | general | jhs | shs | tertiary | educator — specialist coach; auto uses learner_profile.",
     )
+    learning_feedback: LearningFeedback | None = Field(
+        default=None,
+        description="Optional: reward last coach reply in this thread before processing the new message.",
+    )
 
 
 class WorkflowResponse(BaseModel):
     reply: str
     thread_id: str
     agent_lane: str = Field(description="Resolved specialist lane for this turn.")
+    pedagogy_arm: str | None = Field(
+        default=None,
+        description="Bandit-chosen pedagogy arm when adaptive learning is enabled (hints|scaffold|…).",
+    )
+
+
+class LearningFeedbackRequest(BaseModel):
+    thread_id: str = Field(..., min_length=8)
+    signal: Literal["helpful", "not_helpful"]
+
+
+class LearningFeedbackResponse(BaseModel):
+    updated: bool = Field(description="True if a prior pedagogy arm was found and updated.")
 
 
 class HistoryMessage(BaseModel):

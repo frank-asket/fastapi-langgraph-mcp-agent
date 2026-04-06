@@ -1,7 +1,7 @@
 "use client";
 
 import { SignedIn, SignOutButton } from "@clerk/nextjs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { useWorkflowChat, type GetTokenFn } from "@/hooks/useWorkflowChat";
 import { AssistantMessageContent } from "./AssistantMessageContent";
@@ -137,10 +137,20 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
   const [showJumpLatest, setShowJumpLatest] = useState(false);
   const [showJumpTop, setShowJumpTop] = useState(false);
   const [emailingIndex, setEmailingIndex] = useState<number | null>(null);
+  const [feedbackBusy, setFeedbackBusy] = useState<number | null>(null);
+  const [feedbackDone, setFeedbackDone] = useState<{ i: number; kind: string } | null>(null);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const starterSent = useRef(false);
 
   const chat = useWorkflowChat(getToken, clerkSessionReady);
+
+  const lastRatedAssistantIndex = useMemo(() => {
+    let idx = -1;
+    chat.messages.forEach((m, i) => {
+      if (m.role === "assistant" && !m.isError && m.content.trim()) idx = i;
+    });
+    return idx;
+  }, [chat.messages]);
 
   const { sendText } = chat;
 
@@ -196,6 +206,10 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
     if (!el) return;
     onLogScroll();
   }, [chat.messages.length, onLogScroll]);
+
+  useEffect(() => {
+    setFeedbackDone(null);
+  }, [chat.threadId, lastRatedAssistantIndex]);
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch xl:flex-row">
@@ -410,7 +424,68 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</div>
                 )}
                 {m.role === "assistant" && !m.isError && m.content.trim() ? (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-sc-line/60 pt-2">
+                  <div className="mt-3 flex flex-col gap-2 border-t border-sc-line/60 pt-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                    {i === lastRatedAssistantIndex ? (
+                      <>
+                    <button
+                      type="button"
+                      disabled={
+                        emailingIndex === i ||
+                        feedbackBusy === i ||
+                        Boolean(feedbackDone && feedbackDone.i === i) ||
+                        !chat.threadId ||
+                        chat.sending ||
+                        (hasClerkPk && clerkSessionReady === false)
+                      }
+                      onClick={() => {
+                        void (async () => {
+                          if (!chat.threadId) return;
+                          setFeedbackBusy(i);
+                          try {
+                            const ok = await chat.submitLearningFeedback(chat.threadId, "helpful");
+                            if (ok) setFeedbackDone({ i, kind: "helpful" });
+                          } catch {
+                            /* ignore */
+                          } finally {
+                            setFeedbackBusy(null);
+                          }
+                        })();
+                      }}
+                      className="inline-flex items-center rounded-full border border-sc-line bg-sc-bg/80 px-3 py-1.5 text-[0.65rem] font-semibold text-[#9caaa0] transition hover:border-emerald-500/40 hover:text-emerald-200/90 disabled:opacity-50 sm:text-xs"
+                    >
+                      {feedbackBusy === i ? "…" : "👍 Helpful"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={
+                        emailingIndex === i ||
+                        feedbackBusy === i ||
+                        Boolean(feedbackDone && feedbackDone.i === i) ||
+                        !chat.threadId ||
+                        chat.sending ||
+                        (hasClerkPk && clerkSessionReady === false)
+                      }
+                      onClick={() => {
+                        void (async () => {
+                          if (!chat.threadId) return;
+                          setFeedbackBusy(i);
+                          try {
+                            const ok = await chat.submitLearningFeedback(chat.threadId, "not_helpful");
+                            if (ok) setFeedbackDone({ i, kind: "not_helpful" });
+                          } catch {
+                            /* ignore */
+                          } finally {
+                            setFeedbackBusy(null);
+                          }
+                        })();
+                      }}
+                      className="inline-flex items-center rounded-full border border-sc-line bg-sc-bg/80 px-3 py-1.5 text-[0.65rem] font-semibold text-[#9caaa0] transition hover:border-amber-500/40 hover:text-amber-100/90 disabled:opacity-50 sm:text-xs"
+                    >
+                      {feedbackBusy === i ? "…" : "👎 Not quite"}
+                    </button>
+                      </>
+                    ) : null}
                     <button
                       type="button"
                       disabled={
@@ -436,9 +511,16 @@ export function StudioChatWorkspace({ getToken, clerkSessionReady, initialPrompt
                       <IconMail />
                       {emailingIndex === i ? "Sending…" : "Email to me"}
                     </button>
+                    </div>
                     <span className="text-[0.6rem] text-[#6a756d] sm:text-[0.65rem]">
-                      Uses your address in Account → Notification settings
+                      Thumbs tune adaptive coaching (bandit). Email uses your address in Account → Notification
+                      settings.
                     </span>
+                    {feedbackDone?.i === i ? (
+                      <span className="text-[0.65rem] text-emerald-200/80">
+                        Thanks — your next reply will use what we learned.
+                      </span>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

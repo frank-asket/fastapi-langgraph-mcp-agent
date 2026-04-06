@@ -16,7 +16,8 @@ from app.agent_lanes import DEFAULT_AGENT_LANE, resolve_agent_lane
 from app.clerk_auth import ensure_clerk_subscription
 from app.config import Settings, get_settings
 from app.constants import ATTACH_MARK_END, PROFILE_MARK_END, TIMETABLE_MARK_END
-from app.access import verify_app_access
+from app.access import ensure_session_learner_id, verify_app_access
+from app.adaptive_learning import apply_learning_feedback, prepare_pedagogy_for_turn
 from app.document_extract import (
     ALLOWED_DOCUMENT_SUFFIXES,
     extract_document_text,
@@ -31,6 +32,12 @@ from app.trust_safety import augment_assistant_reply, log_if_suspicious_reply
 from app.workflows.graph import get_workflow_graph
 
 logger = logging.getLogger(__name__)
+
+
+def learner_id_for_adaptive(request: Request, settings: Settings, owner_sid: str | None) -> str:
+    if owner_sid:
+        return owner_sid
+    return ensure_session_learner_id(request)
 
 
 def _unpack_stream_message_item(item: Any) -> Any:
@@ -111,6 +118,7 @@ async def build_human_message(
     *,
     attachment_block: str | None = None,
     timetable_block: str | None = None,
+    pedagogy_block: str | None = None,
 ) -> HumanMessage:
     human_text = body.message
     prefix_parts: list[str] = []
@@ -122,7 +130,10 @@ async def build_human_message(
         prefix_parts.append(attachment_block.rstrip())
     if prefix_parts:
         human_text = "\n".join(prefix_parts) + "\n" + human_text
-    human_text = coaching_prefix(body.coaching_mode) + human_text
+    coach_prefix = coaching_prefix(body.coaching_mode)
+    if pedagogy_block:
+        coach_prefix += pedagogy_block
+    human_text = coach_prefix + human_text
     return HumanMessage(content=human_text)
 
 
@@ -162,7 +173,24 @@ async def execute_workflow(
     thread_id = body.thread_id or str(uuid4())
     enforce_thread_policy(settings, thread_id, owner_sid)
 
+    learner_adaptive_id = learner_id_for_adaptive(request, settings, owner_sid)
+    if body.learning_feedback:
+        apply_learning_feedback(
+            settings,
+            learner_adaptive_id,
+            thread_id,
+            helpful=body.learning_feedback.signal == "helpful",
+        )
+
     lane = resolve_agent_lane(body.agent_lane, body.learner_profile)
+    pedagogy_block, pedagogy_arm = prepare_pedagogy_for_turn(
+        settings,
+        owner_id=learner_adaptive_id,
+        thread_id=thread_id,
+        agent_lane=lane,
+        profile=body.learner_profile,
+        coaching_mode=body.coaching_mode,
+    )
     try:
         graph = await get_workflow_graph(settings, saver, lane)
         timetable_block = timetable_context_for_owner(settings, owner_sid)
@@ -172,6 +200,7 @@ async def execute_workflow(
             thread_id,
             attachment_block=attachment_block,
             timetable_block=timetable_block,
+            pedagogy_block=pedagogy_block or None,
         )
         result = await graph.ainvoke(
             {"messages": [human_msg]},
@@ -194,7 +223,12 @@ async def execute_workflow(
     text = content if isinstance(content, str) else str(content)
     log_if_suspicious_reply(text, settings)
     text = augment_assistant_reply(text, settings)
-    return WorkflowResponse(reply=text, thread_id=thread_id, agent_lane=lane)
+    return WorkflowResponse(
+        reply=text,
+        thread_id=thread_id,
+        agent_lane=lane,
+        pedagogy_arm=pedagogy_arm,
+    )
 
 
 async def workflow_history_result(request: Request, thread_id: str) -> HistoryResponse:
@@ -313,7 +347,24 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
     thread_id = body.thread_id or str(uuid4())
     enforce_thread_policy(settings, thread_id, owner_sid)
 
+    learner_adaptive_id = learner_id_for_adaptive(request, settings, owner_sid)
+    if body.learning_feedback:
+        apply_learning_feedback(
+            settings,
+            learner_adaptive_id,
+            thread_id,
+            helpful=body.learning_feedback.signal == "helpful",
+        )
+
     lane = resolve_agent_lane(body.agent_lane, body.learner_profile)
+    pedagogy_block, pedagogy_arm = prepare_pedagogy_for_turn(
+        settings,
+        owner_id=learner_adaptive_id,
+        thread_id=thread_id,
+        agent_lane=lane,
+        profile=body.learner_profile,
+        coaching_mode=body.coaching_mode,
+    )
     graph = await get_workflow_graph(settings, saver, lane)
     timetable_block = timetable_context_for_owner(settings, owner_sid)
     human_msg = await build_human_message(
@@ -322,6 +373,7 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
         thread_id,
         attachment_block=None,
         timetable_block=timetable_block,
+        pedagogy_block=pedagogy_block or None,
     )
     config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
 
@@ -367,6 +419,7 @@ async def workflow_stream_response(request: Request, body: WorkflowRequest) -> E
                         "thread_id": thread_id,
                         "agent_lane": lane,
                         "reply": with_footer,
+                        "pedagogy_arm": pedagogy_arm,
                     }
                 ),
             }
