@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { apiDocsUrl, serviceMapUrl } from "@/lib/api";
 
 export function SiteNav() {
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -25,22 +24,6 @@ export function SiteNav() {
       >
         Coach
       </Link>
-      <a
-        href={apiDocsUrl()}
-        className="shrink-0 rounded-full border border-sc-gold/25 px-3.5 py-2 text-sm font-semibold text-sc-gold hover:border-sc-gold sm:py-1.5"
-        target="_blank"
-        rel="noreferrer"
-      >
-        API docs
-      </a>
-      <a
-        href={serviceMapUrl()}
-        className="shrink-0 rounded-full border border-sc-line px-3.5 py-2 text-sm font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold sm:py-1.5"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Service map
-      </a>
       {hasClerk && (
         <span className="flex shrink-0 items-center gap-2 sm:ml-auto">
           <SignedOut>
