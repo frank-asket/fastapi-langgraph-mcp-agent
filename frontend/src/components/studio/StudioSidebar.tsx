@@ -6,7 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { UserButton, SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { TimetableNotificationsBell } from "@/components/studio/TimetableNotificationsBell";
-import { LEARNER_PROFILE_UPDATED_EVENT, readStoredLearnerProfile } from "@/lib/promptLibraryFromProfile";
+import {
+  LEARNER_PROFILE_STORAGE_KEY,
+  LEARNER_PROFILE_UPDATED_EVENT,
+  readStoredLearnerProfile,
+} from "@/lib/promptLibraryFromProfile";
 
 function useAssessmentCompleted(hasClerk: boolean): boolean {
   const { user, isLoaded } = useUser();
@@ -19,12 +23,15 @@ function useAssessmentCompleted(hasClerk: boolean): boolean {
 
   useEffect(() => {
     refresh();
-    const onUpdate = () => refresh();
-    window.addEventListener(LEARNER_PROFILE_UPDATED_EVENT, onUpdate);
-    window.addEventListener("storage", onUpdate);
+    const onProfileEvent = () => refresh();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LEARNER_PROFILE_STORAGE_KEY || e.key === null) refresh();
+    };
+    window.addEventListener(LEARNER_PROFILE_UPDATED_EVENT, onProfileEvent);
+    window.addEventListener("storage", onStorage);
     return () => {
-      window.removeEventListener(LEARNER_PROFILE_UPDATED_EVENT, onUpdate);
-      window.removeEventListener("storage", onUpdate);
+      window.removeEventListener(LEARNER_PROFILE_UPDATED_EVENT, onProfileEvent);
+      window.removeEventListener("storage", onStorage);
     };
   }, [refresh]);
 
