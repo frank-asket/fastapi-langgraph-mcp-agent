@@ -1,5 +1,8 @@
-import { SignUp } from "@clerk/nextjs";
+import { Suspense } from "react";
 import Link from "next/link";
+import { SignUpView } from "./SignUpView";
+
+export const dynamic = "force-dynamic";
 
 export default function SignUpPage() {
   return (
@@ -7,13 +10,9 @@ export default function SignUpPage() {
       <Link href="/" className="font-[family-name:var(--font-syne)] text-sm font-bold text-sc-gold hover:underline">
         ← Home
       </Link>
-      <SignUp
-        routing="path"
-        path="/sign-up"
-        signInUrl="/sign-in"
-        fallbackRedirectUrl="/studio"
-        signInFallbackRedirectUrl="/studio"
-      />
+      <Suspense fallback={<p className="text-center text-sm text-sc-mist">Loading sign-up…</p>}>
+        <SignUpView />
+      </Suspense>
     </div>
   );
 }
