@@ -64,8 +64,11 @@ export async function fetchSubscriptionStatus(getToken?: GetTokenFn): Promise<Su
         msg +
         " For production, use the same Clerk instance on the Next.js app (pk_live) and on the API (CLERK_JWT_ISSUER). Development keys (pk_test) must match a dev issuer—never mix with a live API URL.";
     } else if (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504) {
-      // Plain "Internal Server Error" often comes from Next (middleware/rewrite) or a proxy — not JWKS.
-      const generic = /internal server error|^500$/i.test(msg.trim());
+      // Generic messages: empty body → formatApiErrorBody uses "Request failed (N)"; fetch statusText may be "Internal Server Error".
+      const trimmed = msg.trim();
+      const generic =
+        /internal server error|^500$/i.test(trimmed) ||
+        /^request failed \(\d+\)$/i.test(trimmed);
       if (generic) {
         msg =
           prefix +
