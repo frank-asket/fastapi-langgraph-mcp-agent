@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: staticImageRemotePatterns(),
   },
+  /** Proxy API under same origin (e.g. study. → coach.) so browser requests avoid CORS. See `getApiUrl()` in `src/lib/api.ts`. */
+  async rewrites() {
+    const raw = (process.env.NEXT_PUBLIC_API_URL || "").trim();
+    if (!raw || !/^https?:\/\//i.test(raw)) return [];
+    const dest = raw.replace(/\/$/, "");
+    return [{ source: "/api/coach/:path*", destination: `${dest}/:path*` }];
+  },
 };
 
 export default nextConfig;

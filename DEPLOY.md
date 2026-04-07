@@ -123,6 +123,8 @@ Similar patterns work on **Render** or a **VPS** with Docker and a volume.
 
 `next.config.ts` adds `images.remotePatterns` from `NEXT_PUBLIC_API_URL` so optimized images can load from your API `/static/**` when needed.
 
+When the UI host differs from the API host (e.g. `https://study.…` and `https://coach.…`), the browser calls the API via **same-origin** rewrite **`/api/coach/*` → `NEXT_PUBLIC_API_URL`** so Studio (subscription, timetable, chat) does not depend on API CORS for credentialed `fetch`. Redeploy the frontend after pulling this behaviour.
+
 ### Next.js security patches / `@next/swc-*` versions
 
 Stay on the **latest `next` in your minor line** (for 15.3.x, use the newest patch e.g. **15.3.8**). [CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478) names **15.3.6** as the *first* fixed 15.3.x release; **15.3.7+** still contains that fix and adds patches for later RSC issues ([Dec 2025 advisory](https://nextjs.org/blog/security-update-2025-12-11))—**do not pin only 15.3.6** unless you have a specific reason.

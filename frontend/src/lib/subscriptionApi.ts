@@ -30,8 +30,13 @@ export async function fetchSubscriptionStatus(getToken?: GetTokenFn): Promise<Su
     headers,
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText || "Could not load subscription status");
+    const text = await res.text().catch(() => "");
+    let msg = text || res.statusText || "Could not load subscription status";
+    if (res.status === 401) {
+      msg +=
+        " For production, use the same Clerk instance on the Next.js app (pk_live) and on the API (CLERK_JWT_ISSUER). Development keys (pk_test) must match a dev issuer—never mix with a live API URL.";
+    }
+    throw new Error(msg);
   }
   return (await res.json()) as SubscriptionStatus;
 }
