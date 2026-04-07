@@ -114,7 +114,13 @@ def _clerk_verify_failure_detail(exc: jwt.exceptions.PyJWTError, token: str, set
 def verify_clerk_session_jwt(token: str, settings: Settings) -> dict[str, Any]:
     jwks = clerk_jwks_url(settings)
     if not jwks:
-        raise HTTPException(status_code=500, detail="Clerk JWKS URL is not configured.")
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Clerk JWKS is not configured on this API. Set CLERK_JWT_ISSUER to your Clerk Frontend API URL "
+                "(Dashboard → API Keys → JWT issuer; no trailing path) or set CLERK_JWKS_URL explicitly."
+            ),
+        )
     try:
         client = _get_jwks_client(jwks)
         signing_key = client.get_signing_key_from_jwt(token)

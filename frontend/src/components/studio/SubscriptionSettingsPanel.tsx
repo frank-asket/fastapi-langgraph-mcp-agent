@@ -20,10 +20,16 @@ function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
 export function SubscriptionSettingsPanel({
   getToken,
   hasClerk,
+  embedded = true,
 }: {
   getToken?: GetTokenFn;
   hasClerk: boolean;
+  /** When false (full `/studio/subscription` page), the parent supplies the visible page title. */
+  embedded?: boolean;
 }) {
+  const h2Class = embedded
+    ? "font-[family-name:var(--font-syne)] text-lg font-bold text-white"
+    : "sr-only";
   const [data, setData] = useState<SubscriptionStatus | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +56,7 @@ export function SubscriptionSettingsPanel({
         id="subscription"
         className="scroll-mt-8 rounded-2xl border border-sc-line bg-sc-elev p-5"
       >
-        <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Subscription</h2>
+        <h2 className={h2Class}>Subscription</h2>
         <p className="mt-3 text-sm text-[#8c9a90]">Loading…</p>
       </section>
     );
@@ -59,7 +65,7 @@ export function SubscriptionSettingsPanel({
   if (err || !data) {
     return (
       <section id="subscription" className="scroll-mt-8 rounded-2xl border border-sc-line bg-sc-elev p-5">
-        <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Subscription</h2>
+        <h2 className={h2Class}>Subscription</h2>
         <p className="mt-3 text-sm text-amber-200/90">{err ?? "Unavailable"}</p>
       </section>
     );
@@ -71,7 +77,7 @@ export function SubscriptionSettingsPanel({
   return (
     <section id="subscription" className="scroll-mt-8 rounded-2xl border border-sc-line bg-sc-elev p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-[family-name:var(--font-syne)] text-lg font-bold text-white">Subscription</h2>
+        <h2 className={h2Class}>Subscription</h2>
         {data.enforcement_enabled && data.clerk_account ? (
           <StatusBadge ok={data.access_allowed} label={data.access_allowed ? "Active" : "Action needed"} />
         ) : null}

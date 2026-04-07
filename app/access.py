@@ -63,8 +63,11 @@ def verify_app_access(request: Request, settings: Settings) -> str | None:
     if settings.clerk_only_auth:
         if not settings.clerk_jwt_configured:
             raise HTTPException(
-                status_code=500,
-                detail="CLERK_ONLY_AUTH is enabled but Clerk JWKS / issuer is not configured.",
+                status_code=503,
+                detail=(
+                    "CLERK_ONLY_AUTH is enabled but Clerk is not configured on this API. "
+                    "Set CLERK_JWT_ISSUER (or CLERK_JWKS_URL) to match the same Clerk instance as the frontend publishable key."
+                ),
             )
         clerk_user = clerk_authenticate_request(request, settings)
         if clerk_user:

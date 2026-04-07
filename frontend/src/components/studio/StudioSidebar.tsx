@@ -67,6 +67,7 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const assessmentCompleted = useAssessmentCompleted(hasClerk);
   const settingsActive = pathname === "/studio/settings" || pathname.startsWith("/studio/settings/");
+  const subscriptionPageActive = pathname === "/studio/subscription";
   const [hash, setHash] = useState("");
   useEffect(() => {
     const sync = () => setHash(typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "");
@@ -75,7 +76,8 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
     return () => window.removeEventListener("hashchange", sync);
   }, [pathname]);
   const notificationsSettingsActive = settingsActive && hash === "notifications";
-  const subscriptionSettingsActive = settingsActive && hash === "subscription";
+  const subscriptionSettingsActive =
+    subscriptionPageActive || (settingsActive && hash === "subscription");
   const generalSettingsActive =
     settingsActive && !notificationsSettingsActive && !subscriptionSettingsActive;
 
@@ -171,7 +173,7 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
               View your plan, billing link, and how this app checks access.
             </p>
             <Link
-              href="/studio/settings#subscription"
+              href="/studio/subscription"
               onClick={closeMobile}
               className="relative mt-3 inline-flex rounded-full border border-sc-gold/40 bg-sc-gold/15 px-3 py-1.5 text-xs font-bold text-sc-gold backdrop-blur hover:bg-sc-gold/25"
             >
@@ -222,7 +224,7 @@ export function StudioSidebar({ id = "studio-sidebar", mobileOpen = false, onClo
               ⚙️ Settings
             </Link>
             <Link
-              href="/studio/settings#subscription"
+              href="/studio/subscription"
               onClick={closeMobile}
               className={`block rounded-lg px-2 py-2 text-[0.85rem] font-medium transition ${
                 subscriptionSettingsActive
