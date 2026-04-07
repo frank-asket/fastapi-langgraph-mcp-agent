@@ -67,7 +67,7 @@ export function PoweredByInfrastructure() {
         </div>
 
         <div className="relative z-10 flex justify-center pt-2 pb-10 sm:pt-3 sm:pb-12">
-          <div className="rounded-xl border border-sc-line bg-[#121916] px-6 py-2.5 font-[family-name:var(--font-syne)] text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-sc-mist shadow-[0_0_0_1px_rgba(200,245,61,0.14)_inset]">
+          <div className="rounded-xl border border-sc-line bg-[#121916] px-6 py-2.5 font-[family-name:var(--font-syne)] text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-sc-mist shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]">
             Powered by
           </div>
         </div>

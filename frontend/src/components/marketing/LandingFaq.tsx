@@ -46,7 +46,7 @@ export function LandingFaq() {
                   {item.q}
                   <span
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c5ccc4] text-lg font-light text-sc-void transition ${
-                      expanded ? "rotate-45 border-sc-lime bg-sc-lime/15" : ""
+                      expanded ? "rotate-45 border-sc-void bg-neutral-200/80" : ""
                     }`}
                     aria-hidden
                   >

@@ -7,11 +7,11 @@
   --color-sc-mist: #c4cfc7;
   --color-sc-gold: #d4a84b;
   --color-sc-leaf: #3d7a5f;
-  /* Marketing accent: electric lime (inspired layout-only; distinct from Zyra brand) */
-  --color-sc-lime: #c8f53d;
-  --color-sc-lime-hover: #d7ff5c;
-  --color-sc-void: #050806;
-  --color-sc-surface: #0c100d;
+  /* Accent for marketing + high-contrast UI: monochrome white on near-black (sc-lime class name = legacy tailwind refs) */
+  --color-sc-lime: #fafafa;
+  --color-sc-lime-hover: #e5e5e5;
+  --color-sc-void: #030303;
+  --color-sc-surface: #0a0a0a;
   --font-syne: var(--font-syne);
   --font-figtree: var(--font-figtree);
 }
@@ -116,12 +116,12 @@ body {
 
 .sc-lime-glow {
   box-shadow:
-    0 0 60px -12px rgba(200, 245, 61, 0.35),
-    0 0 120px -40px rgba(200, 245, 61, 0.2);
+    0 0 60px -12px rgba(255, 255, 255, 0.18),
+    0 0 120px -40px rgba(255, 255, 255, 0.06);
 }
 
 .sc-lime-glow-soft {
-  box-shadow: 0 0 80px -20px rgba(200, 245, 61, 0.25);
+  box-shadow: 0 0 80px -20px rgba(255, 255, 255, 0.1);
 }
 
 @media (prefers-reduced-motion: reduce) {

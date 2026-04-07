@@ -47,17 +47,17 @@ export default function HomePage() {
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-6 sm:pb-28 sm:pt-14">
-          <div className="pointer-events-none absolute left-1/2 top-0 h-[50vh] w-[120%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,_rgba(200,245,61,0.07)_0%,_transparent_55%)]" />
+          <div className="pointer-events-none absolute left-1/2 top-0 h-[50vh] w-[120%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.06)_0%,_transparent_55%)]" />
           <div className="relative mx-auto max-w-6xl text-center">
             <ScrollReveal>
-              <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-sc-lime/25 bg-sc-surface/90 px-4 py-1.5 text-[0.7rem] font-bold uppercase tracking-[0.12em] text-sc-lime shadow-[0_0_40px_-10px_rgba(200,245,61,0.4)]">
+              <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-sc-surface/90 px-4 py-1.5 text-[0.7rem] font-bold uppercase tracking-[0.12em] text-white shadow-[0_0_40px_-10px_rgba(255,255,255,0.15)]">
                 <span aria-hidden>✨</span> Built for African learners &amp; honest pedagogy
               </p>
             </ScrollReveal>
             <ScrollReveal delayClass="delay-75">
               <h1 className="mx-auto max-w-4xl font-[family-name:var(--font-syne)] text-[clamp(2.1rem,6vw,3.75rem)] font-extrabold leading-[1.08] tracking-tight text-white">
                 Run your study rhythm with{" "}
-                <span className="bg-gradient-to-r from-sc-lime to-sc-lime-hover bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
                   Study Coach
                 </span>
               </h1>
@@ -78,7 +78,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/studio/chat"
-                  className="inline-flex items-center gap-2 rounded-2xl border-2 border-sc-line bg-transparent px-7 py-4 font-[family-name:var(--font-syne)] text-base font-bold text-white transition hover:border-sc-lime/55 hover:text-sc-lime"
+                  className="inline-flex items-center gap-2 rounded-2xl border-2 border-white/25 bg-transparent px-7 py-4 font-[family-name:var(--font-syne)] text-base font-bold text-white transition hover:border-white/50 hover:bg-white/[0.04]"
                 >
                   Live demo
                 </Link>
@@ -98,7 +98,7 @@ export default function HomePage() {
               {["GES · BECE", "SHS tracks", "WASSCE prep", "Tertiary programmes"].map((label) => (
                 <span
                   key={label}
-                  className="rounded-full border border-sc-line bg-sc-surface/60 px-4 py-2 text-xs font-semibold text-[#8c9a90] transition hover:border-sc-lime/30 hover:text-sc-mist"
+                  className="rounded-full border border-sc-line bg-sc-surface/60 px-4 py-2 text-xs font-semibold text-[#8c9a90] transition hover:border-white/25 hover:text-white"
                 >
                   {label}
                 </span>
@@ -145,7 +145,7 @@ export default function HomePage() {
               ].map((f, i) => (
                 <ScrollReveal key={f.title} delayClass={i % 2 === 1 ? "delay-100" : ""}>
                   <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-sc-line bg-sc-elev transition duration-300 hover:border-sc-lime/25 hover:shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
-                    <div className="flex min-h-[140px] items-center justify-center border-b border-sc-line bg-sc-surface/50 p-6 transition group-hover:bg-sc-lime/[0.06]">
+                    <div className="flex min-h-[140px] items-center justify-center border-b border-sc-line bg-sc-surface/50 p-6 transition group-hover:bg-white/[0.04]">
                       {f.visual}
                     </div>
                     <div className="flex flex-1 flex-col p-6">
@@ -194,7 +194,7 @@ export default function HomePage() {
                 <ScrollReveal key={x.t} delayClass={i % 2 === 1 ? "delay-75" : ""}>
                   <div className="flex gap-4 rounded-2xl border border-sc-line bg-sc-surface/40 p-6 transition hover:border-sc-lime/20">
                     <span
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sc-lime/15 text-lg text-sc-lime ring-1 ring-sc-lime/25"
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-lg text-white ring-1 ring-white/20"
                       aria-hidden
                     >
                       {x.icon}
@@ -240,7 +240,7 @@ export default function HomePage() {
         <section id="faq" className="scroll-mt-28 border-t border-sc-line bg-[#f4f6f3] px-4 py-20 sm:px-6">
           <div className="mx-auto max-w-6xl">
             <ScrollReveal>
-              <h2 className="text-center font-[family-name:var(--font-syne)] text-2xl font-extrabold text-sc-lime sm:text-3xl">
+              <h2 className="text-center font-[family-name:var(--font-syne)] text-2xl font-extrabold text-sc-void sm:text-3xl">
                 Frequently asked questions
               </h2>
               <p className="mx-auto mt-3 max-w-lg text-center text-sm text-[#4a524c]">
@@ -395,7 +395,7 @@ function MiniBars() {
       {[40, 65, 45, 80, 55, 72, 50].map((h, i) => (
         <div
           key={i}
-          className="flex-1 rounded-t bg-gradient-to-t from-sc-lime/25 to-sc-lime transition-all duration-500 group-hover:from-sc-lime/40 group-hover:to-sc-lime-hover"
+          className="flex-1 rounded-t bg-gradient-to-t from-white/25 to-white/50 transition-all duration-500 group-hover:from-white/35 group-hover:to-white/70"
           style={{ height: `${h}%` }}
         />
       ))}
@@ -407,7 +407,7 @@ function MiniThread() {
   return (
     <div className="w-full max-w-[220px] space-y-2 text-left text-[0.65rem]">
       <div className="ml-4 rounded-lg border border-sc-line bg-sc-bg px-2 py-1.5 text-sc-mist">Learner</div>
-      <div className="mr-4 rounded-lg border border-sc-lime/30 bg-sc-lime/10 px-2 py-1.5 text-sc-mist">Coach + tools</div>
+      <div className="mr-4 rounded-lg border border-white/25 bg-white/10 px-2 py-1.5 text-sc-mist">Coach + tools</div>
       <div className="ml-4 rounded-lg border border-sc-line bg-sc-bg px-2 py-1.5 text-sc-mist">Follow-up</div>
     </div>
   );
@@ -418,7 +418,7 @@ function MiniDoc() {
     <div className="flex w-full max-w-[200px] gap-2">
       <div className="h-16 w-12 shrink-0 rounded border border-sc-line bg-sc-bg" />
       <div className="flex flex-1 flex-col justify-center gap-1">
-        <div className="h-2 rounded bg-sc-lime/35" />
+        <div className="h-2 rounded bg-white/40" />
         <div className="h-2 w-[80%] rounded bg-sc-line" />
         <div className="h-2 w-[60%] rounded bg-sc-line" />
       </div>
@@ -432,7 +432,7 @@ function MiniCal() {
       {Array.from({ length: 21 }).map((_, i) => (
         <div
           key={i}
-          className={`aspect-square rounded-sm ${i % 5 === 0 ? "bg-sc-lime/40 ring-1 ring-sc-lime/50" : "bg-sc-line/60"}`}
+          className={`aspect-square rounded-sm ${i % 5 === 0 ? "bg-white/35 ring-1 ring-white/40" : "bg-sc-line/60"}`}
         />
       ))}
     </div>
