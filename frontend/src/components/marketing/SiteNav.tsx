@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { SiteNavClerkAuth } from "@/components/marketing/SiteNavClerkAuth";
 
 export function SiteNav() {
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -24,23 +24,7 @@ export function SiteNav() {
       >
         Coach
       </Link>
-      {hasClerk && (
-        <span className="flex shrink-0 items-center gap-2 sm:ml-auto">
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button
-                type="button"
-                className="rounded-full border border-sc-line px-3.5 py-1.5 text-sm font-semibold text-sc-mist hover:border-sc-gold hover:text-sc-gold"
-              >
-                Sign in
-              </button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-        </span>
-      )}
+      {hasClerk ? <SiteNavClerkAuth /> : null}
     </nav>
   );
 }
