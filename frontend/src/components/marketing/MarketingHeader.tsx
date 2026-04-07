@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { AppLogo } from "@/components/brand/AppLogo";
-import { MarketingHeaderClerkActions } from "@/components/marketing/MarketingHeaderClerkActions";
 
 const nav = [
   { href: "#features", label: "Features" },
@@ -59,7 +59,37 @@ export function MarketingHeader({ apiServiceUrl }: { apiServiceUrl: string }) {
             Live coach
           </Link>
           {hasClerk ? (
-            <MarketingHeaderClerkActions />
+            <>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="rounded-full px-3 py-1.5 text-sm font-semibold text-sc-mist transition hover:text-sc-lime"
+                  >
+                    Log in
+                  </button>
+                </SignInButton>
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="sc-lime-glow-soft rounded-full bg-sc-lime px-4 py-2 text-sm font-bold text-sc-void shadow-lg transition hover:bg-sc-lime-hover"
+                  >
+                    Get started
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <div className="flex items-center gap-2 pl-1">
+                  <Link
+                    href="/studio"
+                    className="hidden text-sm font-semibold text-sc-lime sm:inline"
+                  >
+                    Studio
+                  </Link>
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
+            </>
           ) : (
             <Link
               href="/assessment"

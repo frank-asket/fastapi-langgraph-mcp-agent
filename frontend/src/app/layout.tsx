@@ -47,11 +47,7 @@ export default function RootLayout({
 
   if (clerkPk) {
     return (
-      <ClerkProvider
-        publishableKey={clerkPk}
-        signInFallbackRedirectUrl="/studio"
-        signUpFallbackRedirectUrl="/studio"
-      >
+      <ClerkProvider signInFallbackRedirectUrl="/studio" signUpFallbackRedirectUrl="/studio">
         {tree}
       </ClerkProvider>
     );
