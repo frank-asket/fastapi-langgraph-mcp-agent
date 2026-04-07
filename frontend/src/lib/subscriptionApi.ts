@@ -57,14 +57,30 @@ export async function fetchSubscriptionStatus(getToken?: GetTokenFn): Promise<Su
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     let msg = formatApiErrorBody(res.status, text) || res.statusText || "Could not load subscription status";
+    const prefix = `[HTTP ${res.status}] `;
     if (res.status === 401) {
-      msg +=
+      msg =
+        prefix +
+        msg +
         " For production, use the same Clerk instance on the Next.js app (pk_live) and on the API (CLERK_JWT_ISSUER). Development keys (pk_test) must match a dev issuer—never mix with a live API URL.";
-    } else if (res.status === 500 || res.status === 503) {
-      if (!msg.toLowerCase().includes("clerk") && !msg.toLowerCase().includes("jwks")) {
-        msg +=
-          " If this mentions JWKS or issuer, set CLERK_JWT_ISSUER (or CLERK_JWKS_URL) on the API host to match your Clerk Frontend API / publishable key.";
+    } else if (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504) {
+      // Plain "Internal Server Error" often comes from Next (middleware/rewrite) or a proxy — not JWKS.
+      const generic = /internal server error|^500$/i.test(msg.trim());
+      if (generic) {
+        msg =
+          prefix +
+          msg +
+          " This status usually means the Next.js `/api/coach` proxy or the API process crashed — check Vercel and Railway logs. JWKS/issuer issues normally return 401 or 503 with a JSON `detail` from FastAPI.";
+      } else if (!msg.toLowerCase().includes("clerk") && !msg.toLowerCase().includes("jwks")) {
+        msg =
+          prefix +
+          msg +
+          " If the API `detail` mentions JWKS or issuer, set CLERK_JWT_ISSUER (or CLERK_JWKS_URL) on the API host.";
+      } else {
+        msg = prefix + msg;
       }
+    } else {
+      msg = prefix + msg;
     }
     throw new Error(msg);
   }

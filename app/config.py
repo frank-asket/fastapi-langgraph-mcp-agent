@@ -127,9 +127,9 @@ class Settings(BaseSettings):
     trust_safety_log_risk_signals: bool = Field(default=False)
 
     # --- Clerk (optional): session JWT + webhooks + subscription enforcement ---
-    #: Clerk Frontend API URL (JWT "iss"), e.g. https://your-instance.clerk.accounts.dev
+    #: Clerk Frontend API URL (JWT ``iss``): Clerk dev host, production Frontend API, or custom domain (e.g. https://clerk.example.com) with no trailing slash.
     clerk_jwt_issuer: str | None = None
-    #: Override JWKS URL (default: {issuer}/.well-known/jwks.json). See Clerk manual JWT docs.
+    #: JWKS URL for session JWT verification (PyJWKClient). Default when unset: ``{clerk_jwt_issuer}/.well-known/jwks.json``. Set explicitly for custom FAPI domains if needed. Clerk’s “JWKS public key” PEM matches keys in this document; this app does not read PEM from env.
     clerk_jwks_url: str | None = None
     #: If set, JWT audience is verified; otherwise aud check is skipped.
     clerk_jwt_audience: str | None = None
