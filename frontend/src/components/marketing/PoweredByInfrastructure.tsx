@@ -60,14 +60,14 @@ export function PoweredByInfrastructure() {
               strokeLinecap="round"
               fill="none"
             />
-            <circle cx="460" cy="18" r="2.5" fill="currentColor" className="text-sc-gold/70" />
-            <circle cx="360" cy="52" r="2" fill="currentColor" className="text-sc-gold/50" />
-            <circle cx="560" cy="52" r="2" fill="currentColor" className="text-sc-gold/50" />
+            <circle cx="460" cy="18" r="2.5" fill="currentColor" className="text-sc-lime/70" />
+            <circle cx="360" cy="52" r="2" fill="currentColor" className="text-sc-lime/50" />
+            <circle cx="560" cy="52" r="2" fill="currentColor" className="text-sc-lime/50" />
           </svg>
         </div>
 
         <div className="relative z-10 flex justify-center pt-2 pb-10 sm:pt-3 sm:pb-12">
-          <div className="rounded-xl border border-sc-line bg-[#121916] px-6 py-2.5 font-[family-name:var(--font-syne)] text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-sc-mist shadow-[0_0_0_1px_rgba(212,168,75,0.12)_inset]">
+          <div className="rounded-xl border border-sc-line bg-[#121916] px-6 py-2.5 font-[family-name:var(--font-syne)] text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-sc-mist shadow-[0_0_0_1px_rgba(200,245,61,0.14)_inset]">
             Powered by
           </div>
         </div>
@@ -76,9 +76,9 @@ export function PoweredByInfrastructure() {
           {cards.map((card) => (
             <article
               key={card.name}
-              className="group rounded-2xl border border-sc-line bg-sc-elev p-5 transition duration-200 hover:-translate-y-0.5 hover:border-sc-gold/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.35)]"
+              className="group rounded-2xl border border-sc-line bg-sc-elev p-5 transition duration-200 hover:-translate-y-0.5 hover:border-sc-lime/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.35)]"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-sc-line bg-sc-bg text-sc-mist transition group-hover:border-sc-gold/25">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-sc-line bg-sc-bg text-sc-mist transition group-hover:border-sc-lime/25">
                 <card.icon />
               </div>
               <h3 className="font-[family-name:var(--font-syne)] text-base font-bold">
@@ -86,10 +86,10 @@ export function PoweredByInfrastructure() {
                   href={card.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-white transition hover:text-sc-gold"
+                  className="inline-flex items-center gap-1.5 text-white transition hover:text-sc-lime"
                 >
                   {card.name}
-                  <ExternalArrow className="h-3.5 w-3.5 shrink-0 text-sc-gold/80 opacity-80 group-hover:opacity-100" />
+                  <ExternalArrow className="h-3.5 w-3.5 shrink-0 text-sc-lime/80 opacity-80 group-hover:opacity-100" />
                 </Link>
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-[#8c9a90]">{card.description}</p>
@@ -104,7 +104,7 @@ export function PoweredByInfrastructure() {
           href="https://modelcontextprotocol.io/"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-sc-gold hover:underline"
+          className="font-semibold text-sc-lime hover:underline"
         >
           MCP
         </Link>{" "}
@@ -139,7 +139,7 @@ function IconFastAPI() {
         className="text-sc-leaf"
         fill="none"
       />
-      <path d="M13 20h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="text-sc-gold" />
+      <path d="M13 20h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="text-sc-lime" />
     </svg>
   );
 }
@@ -154,9 +154,9 @@ function IconLangGraph() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="6" cy="22" r="2.2" fill="currentColor" className="text-sc-gold" />
+      <circle cx="6" cy="22" r="2.2" fill="currentColor" className="text-sc-lime" />
       <circle cx="12" cy="26" r="2.2" fill="currentColor" className="text-sc-leaf" />
-      <circle cx="18" cy="22" r="2.2" fill="currentColor" className="text-sc-gold" />
+      <circle cx="18" cy="22" r="2.2" fill="currentColor" className="text-sc-lime" />
     </svg>
   );
 }

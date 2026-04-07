@@ -7,6 +7,11 @@
   --color-sc-mist: #c4cfc7;
   --color-sc-gold: #d4a84b;
   --color-sc-leaf: #3d7a5f;
+  /* Marketing accent: electric lime (inspired layout-only; distinct from Zyra brand) */
+  --color-sc-lime: #c8f53d;
+  --color-sc-lime-hover: #d7ff5c;
+  --color-sc-void: #050806;
+  --color-sc-surface: #0c100d;
   --font-syne: var(--font-syne);
   --font-figtree: var(--font-figtree);
 }
@@ -77,4 +82,56 @@ body {
 
 .sc-assistant-line {
   animation: sc-assistant-line-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Landing: glow + scroll-in (respect reduced motion) */
+@keyframes sc-landing-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.02);
+  }
+}
+
+.sc-landing-glow {
+  animation: sc-landing-glow 5s ease-in-out infinite;
+}
+
+.sc-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sc-reveal.sc-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sc-lime-glow {
+  box-shadow:
+    0 0 60px -12px rgba(200, 245, 61, 0.35),
+    0 0 120px -40px rgba(200, 245, 61, 0.2);
+}
+
+.sc-lime-glow-soft {
+  box-shadow: 0 0 80px -20px rgba(200, 245, 61, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-landing-glow {
+    animation: none;
+  }
+  .sc-reveal,
+  .sc-reveal.sc-reveal-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
