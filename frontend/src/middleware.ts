@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import type { NextRequest } from "next/server";
 
 const protectApp = createRouteMatcher(["/studio(.*)"]);
 
@@ -6,13 +7,22 @@ const protectApp = createRouteMatcher(["/studio(.*)"]);
 const embeddedSignIn = "/sign-in";
 const embeddedSignUp = "/sign-up";
 
+function absoluteAuthPath(req: NextRequest, path: string): string {
+  return new URL(path, req.url).href;
+}
+
 export default clerkMiddleware(
   async (auth, req) => {
     if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && protectApp(req)) {
-      await auth.protect({ unauthenticatedUrl: embeddedSignIn });
+      await auth.protect({
+        unauthenticatedUrl: absoluteAuthPath(req, embeddedSignIn),
+      });
     }
   },
-  { signInUrl: embeddedSignIn, signUpUrl: embeddedSignUp },
+  (req) => ({
+    signInUrl: absoluteAuthPath(req, embeddedSignIn),
+    signUpUrl: absoluteAuthPath(req, embeddedSignUp),
+  }),
 );
 
 export const config = {
