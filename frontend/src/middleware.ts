@@ -2,11 +2,18 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const protectApp = createRouteMatcher(["/studio(.*)"]);
 
-export default clerkMiddleware(async (auth, req) => {
-  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && protectApp(req)) {
-    await auth.protect();
-  }
-});
+/** Same-origin auth pages — avoids Clerk Account Portal hostnames (e.g. sign-in.example.com) that may be NXDOMAIN until DNS is ready. */
+const embeddedSignIn = "/sign-in";
+const embeddedSignUp = "/sign-up";
+
+export default clerkMiddleware(
+  async (auth, req) => {
+    if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && protectApp(req)) {
+      await auth.protect({ unauthenticatedUrl: embeddedSignIn });
+    }
+  },
+  { signInUrl: embeddedSignIn, signUpUrl: embeddedSignUp },
+);
 
 export const config = {
   matcher: [
