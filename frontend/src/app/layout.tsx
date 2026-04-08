@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Syne, Figtree } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { FirstLoginAssessmentRedirect } from "@/components/auth/FirstLoginAssessmentRedirect";
+import { clerkProxyUrlForRequest } from "@/lib/clerkFapiProxy";
 import "./globals.css";
 
 const syne = Syne({
@@ -27,12 +28,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const clerkPk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const clerkProxyUrl = clerkPk ? await clerkProxyUrlForRequest() : undefined;
 
   const tree = (
     <html lang="en">
@@ -49,6 +51,7 @@ export default function RootLayout({
     return (
       <ClerkProvider
         publishableKey={clerkPk}
+        {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
         signInUrl="/sign-in"
         signUpUrl="/sign-up"
         signInFallbackRedirectUrl="/studio"

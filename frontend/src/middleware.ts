@@ -1,3 +1,4 @@
+import { clerkProxyUrlFromRequest } from "@/lib/clerkFapiProxy";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 
@@ -19,16 +20,20 @@ export default clerkMiddleware(
       });
     }
   },
-  (req) => ({
-    signInUrl: absoluteAuthPath(req, embeddedSignIn),
-    signUpUrl: absoluteAuthPath(req, embeddedSignUp),
-  }),
+  (req) => {
+    const base = {
+      signInUrl: absoluteAuthPath(req, embeddedSignIn),
+      signUpUrl: absoluteAuthPath(req, embeddedSignUp),
+    };
+    const proxyUrl = clerkProxyUrlFromRequest(req);
+    return proxyUrl ? { ...base, proxyUrl } : base;
+  },
 );
 
 export const config = {
   matcher: [
     // Skip `/api/coach/*`: those requests are rewritten to FastAPI (see `next.config.ts`). Running Clerk
     // middleware on that path caused 500s for credentialed fetches (e.g. GET /account/subscription).
-    "/((?!_next|api/coach|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|api/coach|__clerk|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };
