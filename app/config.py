@@ -131,6 +131,8 @@ class Settings(BaseSettings):
     clerk_jwt_issuer: str | None = None
     #: JWKS URL for session JWT verification (PyJWKClient). Default when unset: ``{clerk_jwt_issuer}/.well-known/jwks.json``. Set explicitly for custom FAPI domains if needed. Clerk’s “JWKS public key” PEM matches keys in this document; this app does not read PEM from env.
     clerk_jwks_url: str | None = None
+    #: When the primary JWKS URL fails (403 from proxy, DNS, etc.), try this URL next (often ``https://<instance>.clerk.accounts.dev/.well-known/jwks.json`` from Clerk Dashboard). JWT ``iss`` may still be the custom Frontend API if ``CLERK_JWT_ISSUER`` matches the token.
+    clerk_jwks_fallback_url: str | None = None
     #: If set, JWT audience is verified; otherwise aud check is skipped.
     clerk_jwt_audience: str | None = None
     #: Comma-separated origins allowed in the session token `azp` claim (recommended for CSRF safety).

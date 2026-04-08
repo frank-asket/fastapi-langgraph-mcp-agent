@@ -39,6 +39,66 @@ def clerk_jwks_url(settings: Settings) -> str | None:
     return None
 
 
+def _jwks_candidate_urls(settings: Settings) -> list[str]:
+    """Ordered JWKS endpoints: primary (from CLERK_JWKS_URL or issuer), then optional fallback."""
+    out: list[str] = []
+    seen: set[str] = set()
+
+    def add(u: str) -> None:
+        s = u.strip().rstrip("/")
+        if not s:
+            return
+        k = s.lower()
+        if k in seen:
+            return
+        seen.add(k)
+        out.append(s)
+
+    primary = clerk_jwks_url(settings)
+    if primary:
+        add(primary)
+    fb = (settings.clerk_jwks_fallback_url or "").strip()
+    if fb:
+        fb_norm = fb.rstrip("/")
+        if "/.well-known/jwks.json" in fb_norm or fb_norm.endswith("jwks.json"):
+            add(fb_norm)
+        else:
+            add(f"{fb_norm}/.well-known/jwks.json")
+    return out
+
+
+def _clerk_signing_key_from_jwks(token: str, settings: Settings) -> Any:
+    """Resolve the signing key, trying each JWKS URL until one succeeds (handles blocked custom-domain JWKS)."""
+    urls = _jwks_candidate_urls(settings)
+    if not urls:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Clerk JWKS is not configured on this API. Set CLERK_JWT_ISSUER to your Clerk Frontend API URL "
+                "(Dashboard → API Keys → JWT issuer; no trailing path) or set CLERK_JWKS_URL explicitly."
+            ),
+        )
+    last_err: BaseException | None = None
+    for url in urls:
+        try:
+            client = _get_jwks_client(url)
+            return client.get_signing_key_from_jwt(token)
+        except (jwt.exceptions.PyJWTError, OSError, ValueError) as e:
+            last_err = e
+            logger.warning("Clerk JWKS key lookup failed for %s: %s", url, e)
+        except Exception as e:  # noqa: BLE001 — PyJWKClient may raise urllib errors
+            last_err = e
+            logger.warning("Clerk JWKS key lookup failed for %s: %s", url, e)
+    raise HTTPException(
+        status_code=503,
+        detail=(
+            "Could not load Clerk JWKS from any configured URL. "
+            "If your custom Frontend API returns 403 for /.well-known/jwks.json, set CLERK_JWKS_FALLBACK_URL "
+            "to the instance JWKS URL from Clerk Dashboard (same Clerk app as your publishable key)."
+        ),
+    ) from last_err
+
+
 def _get_jwks_client(url: str) -> PyJWKClient:
     if url not in _jwks_clients:
         _jwks_clients[url] = PyJWKClient(url)
@@ -106,24 +166,14 @@ def _clerk_verify_failure_detail(exc: jwt.exceptions.PyJWTError, token: str, set
         )
     return (
         "Invalid Clerk session token (signature or format). Check CLERK_JWT_ISSUER and CLERK_JWKS_URL "
-        "match the same Clerk instance as NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY."
+        "(and CLERK_JWKS_FALLBACK_URL if used) match the same Clerk instance as NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY."
         + hint
     )
 
 
 def verify_clerk_session_jwt(token: str, settings: Settings) -> dict[str, Any]:
-    jwks = clerk_jwks_url(settings)
-    if not jwks:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Clerk JWKS is not configured on this API. Set CLERK_JWT_ISSUER to your Clerk Frontend API URL "
-                "(Dashboard → API Keys → JWT issuer; no trailing path) or set CLERK_JWKS_URL explicitly."
-            ),
-        )
     try:
-        client = _get_jwks_client(jwks)
-        signing_key = client.get_signing_key_from_jwt(token)
+        signing_key = _clerk_signing_key_from_jwks(token, settings)
         issuer = (settings.clerk_jwt_issuer or "").strip().rstrip("/") or None
         audience = (settings.clerk_jwt_audience or "").strip() or None
         decode_kw: dict[str, Any] = {"algorithms": ["RS256"], "leeway": 60}
